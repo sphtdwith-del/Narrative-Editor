@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Narrative Tag Editor v1.0 White Editor</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    :root, [data-theme="light"] {
+      --bg: #f5f5f7; --sf: #f5f5f7; --sf2: #ffffff; --sf3: #e5e5ea; --bd: #d1d1d6;
+      --tx: #1d1d1f; --mt: #86868b; --pr: #007aff; --prh: #0066cc; --prbg: #e5f0ff;
+      --wn: #ff9500; --er: #ff3b30; --r1: 4px; --r2: 6px; --r3: 8px;
+      --sh: 0 4px 14px rgba(0,0,0,0.04); --f1: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    [data-theme="dark"] {
+      --bg: #000000; --sf: #000000; --sf2: #1c1c1e; --sf3: #2c2c2e; --bd: #38383a;
+      --tx: #f5f5f7; --mt: #98989d; --pr: #0a84ff; --prh: #007aff; --prbg: #004080;
+      --wn: #ff9f0a; --er: #ff453a; --sh: 0 4px 14px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { font: 14px/1.5 var(--f1); background: var(--bg); color: var(--tx); letter-spacing: -0.01em; }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; border: 0; }
+    input, textarea, select { width: 100%; background: var(--sf2); border: 1px solid var(--bd); border-radius: var(--r1); padding: 8px 12px; transition: all 0.2s ease; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--pr); box-shadow: 0 0 0 3px var(--prbg); }
+    textarea { min-height: 100px; resize: vertical; }
+
+    .app { display: grid; grid-template-columns: var(--left-w, 330px) 4px 1fr 4px var(--right-w, 470px); min-height: 100vh; background: var(--bd); }
+    .resizer { cursor: col-resize; background: transparent; transition: background 0.2s; z-index: 10; }
+    .resizer:hover, .resizer.active { background: var(--pr); }
+
+    .panel { background: var(--sf); padding: 4px; display: flex; flex-direction: column; gap: 0; height: 100vh; overflow: hidden; }
+    .title { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+    .muted { color: var(--mt); } .tiny { font-size: 0.8rem; color: var(--mt); font-weight: 500; }
+    .row, .stack, .toolbar { display: flex; gap: 0.5rem; }
+    .stack { flex-direction: column; } .toolbar { flex-wrap: wrap; }
+    .card { background: var(--sf2); border: 1px solid transparent; border-radius: var(--r2); padding: 1.25rem; box-shadow: var(--sh); transition: border 0.2s; }
+    .card:hover { border-color: var(--bd); }
+
+    .btn { background: var(--sf3); color: var(--tx); border: 1px solid var(--bd); padding: 5px 10px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-weight: 500; transition: all 0.2s ease; font-size: 13px; }
+    .btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); filter: brightness(0.9); }
+    .btn-primary { background: var(--pr); color: #fff; border-color: var(--pr); }
+    .btn-danger { background: var(--er); color: #fff; border-color: var(--er); }
+
+    .list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .item { padding: 0.75rem 1rem; border-radius: var(--r2); background: var(--sf2); border: 1px solid transparent; cursor: pointer; user-select: none; transition: all 0.2s ease; box-shadow: var(--sh); }
+    .item:hover { border-color: var(--bd); transform: translateY(-1px); }
+    .item.active { border-color: var(--pr); background: var(--prbg); color: var(--prh); box-shadow: 0 0 0 1px var(--pr); }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; } .full { grid-column: 1 / -1; }
+    .split { display: flex; flex-direction: row; gap: 0; }
+    .code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; white-space: pre-wrap; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: var(--r1); overflow: auto; max-height: 300px; }
+
+    .tabs { display: flex; background: var(--sf3); padding: 3px; border-radius: 6px; gap: 2px; }
+    .tab { flex: 1; text-align: center; background: transparent; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; color: var(--mt); font-size: 13px; transition: all 0.2s ease; }
+    .tab.active { background: var(--sf2); color: var(--tx); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .panel > .view { flex: 1; min-height: 0; }
+    /* Target specific views for full height cards, excluding r-out */
+    #r-preview > .card, #r-sim > .card, #r-flow > .card, #r-proj-flow > .card { height: 100%; display: flex; flex-direction: column; }
+    #r-preview > .card > .row, #r-sim > .card > .row, #r-flow > .card > .row, #r-proj-flow > .card > .row { flex-shrink: 0; }
+
+    /* Let the inner boxes scroll */
+    #previewBox, #simBox, #flowBox, #projFlowBox { flex: 1; overflow-y: auto; min-height: 0; }
+    .view { display: none; } .view.active { display: block; animation: fadeIn 0.3s ease-out; }
+    .hidden { display: none !important; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--sf3); color: var(--tx); }
+
+    .sim-line { animation: fadeIn 0.3s ease-out; margin-bottom: 0.5rem; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--mt); }
+  
+    #blockForm textarea {
+       font-size: 18px !important;
+       line-height: 1.8 !important;
+       font-family: inherit !important;
+       padding: 8px !important;
+    }
+
+    /* Tab View Layout Fix */
+    .panel > .view { flex: 1; min-height: 0; }
+    .panel > .view.active#blocks { display: flex; flex-direction: column; }
+    .panel > .view.active#meta { overflow-y: auto; }
+
+/* ------------------------------------------- */
+/* PERFECT IPAD AIR 3-COLUMN LAYOUT            */
+/* ------------------------------------------- */
+html, body {
+  margin: 0; padding: 0;
+  height: 100dvh;
+  overflow: hidden; /* Prevent page-level scrolling */
+  background: var(--bg);
+}
+
+header {
+  height: 60px; /* Fixed height for header */
+  box-sizing: border-box;
+}
+
+.app {
+  display: grid !important;
+  /* Columns: Left(240px) Center(Flexible, wide) Right(320px) */
+  grid-template-columns: 240px 1fr 320px !important;
+  grid-template-rows: 1fr !important;
+  height: calc(100dvh - 60px) !important;
+  min-height: 0 !important;
+  gap: 0 !important;
+}
+
+/* Target the Left Panel (1st child) */
+.app > aside:nth-child(1) {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  border-right: 1px solid var(--bd);
+}
+
+/* Hide Resizers (2nd and 4th children) */
+.app > div.resizer {
+  display: none !important;
+}
+
+/* Target the Center Panel (3rd child) */
+.app > main:nth-child(3) {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--bg);
+}
+
+/* Make sure the active view in the center panel takes full height */
+.app > main:nth-child(3) > section.view.active {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+/* Make sure textareas in blocks view fill the space */
+#blockForm {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+}
+
+#blockForm .field:has(textarea) {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#blockForm textarea {
+  flex: 1 1 auto !important;
+  min-height: 300px !important;
+  resize: none !important; /* Disable manual resize since it flexes */
+  box-sizing: border-box !important;
+}
+
+/* Target the Right Panel (5th child) */
+.app > aside:nth-child(5) {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  border-left: 1px solid var(--bd);
+  background: var(--sf1);
+}
+
+/* Mermaid and preview scaling */
+#mermaid {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 300px !important;
+}
+
+/* Optimize form density for iPad */
+.card.grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+.tabs { padding: 4px; overflow-x: auto; white-space: nowrap; flex-shrink: 0; }
+
+
+
+/* --- FINAL IPAD POLISHED LAYOUT --- */
+
+/* 1단 (좌측 패널) 면적 유지 및 디자인 정비 */
+.app {
+  grid-template-columns: 180px 1fr 320px !important;
+}
+
+/* 좌측 패널(1단) 미관 정비 */
+.app > aside:nth-child(1) {
+  background: var(--bg) !important;
+}
+.app > aside:nth-child(1) .tabs {
+  padding: 8px 8px 0 8px !important;
+  gap: 4px !important;
+  flex-wrap: wrap !important;
+  border-bottom: none !important;
+}
+.app > aside:nth-child(1) .tab {
+  font-size: 12px !important;
+  padding: 6px !important;
+  border-radius: 6px 6px 0 0 !important;
+  flex: 1 1 auto !important;
+  text-align: center !important;
+}
+.app > aside:nth-child(1) > section.view {
+  padding: 12px 8px !important;
+}
+#metaForm.grid {
+  gap: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+#metaForm .field {
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 !important;
+}
+#metaForm label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #888 !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+#metaForm input, #metaForm select, #metaForm button {
+  font-size: 13px !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--bd) !important;
+  background: var(--sf1) !important;
+}
+#metaForm input:focus, #metaForm select:focus {
+  border-color: var(--pr) !important;
+  background: var(--bg) !important;
+}
+
+/* 2단 (중앙 패널) 블록 vs 편집기 비율 (1:3) 및 구분선 제거 */
+#blocks .split {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#blockList {
+  flex: 1 !important; /* 1 비율 */
+  min-width: 120px !important;
+  max-width: 25% !important;
+  border-right: none !important; /* 기능 없는 바 완전 제거 */
+  box-shadow: inset -1px 0 0 0 rgba(255,255,255,0.05) !important; /* 아주 미세한 경계만 남김 */
+  padding: 8px !important;
+}
+
+#blockForm {
+  flex: 3 !important; /* 3 비율 */
+  width: 75% !important;
+  padding: 16px 20px !important; /* 편집기 내부 여유 공간 */
+  background: var(--bg) !important;
+}
+
+/* 태그 메뉴(툴바)와 텍스트 입력창 간격 확보 */
+#blockForm .toolbar, #blockForm .row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 20px !important; /* 메뉴와 입력창 사이 넓게 띄움 */
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--bd) !important;
+}
+
+#blockForm .toolbar button, #blockForm .row button {
+  flex: 1 1 auto !important;
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  border-radius: 6px !important;
+  background: var(--sf1) !important;
+  border: 1px solid var(--bd) !important;
+  color: var(--tx1) !important;
+}
+#blockForm .toolbar button:hover, #blockForm .row button:hover {
+  background: var(--sf2) !important;
+}
+
+/* 3단 (우측 패널) 여백 낭비 제거하고 넓게 쓰기 */
+.app > aside:nth-child(5) {
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--bg) !important;
+  border-left: 1px solid var(--bd) !important;
+}
+.app > aside:nth-child(5) > .tabs {
+  padding: 8px 4px 0 4px !important;
+  gap: 2px !important;
+}
+.app > aside:nth-child(5) > section.view {
+  padding: 4px !important; /* 불필요한 여백 최소화 */
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+#r-preview {
+  padding: 0 !important; /* 미리보기는 여백 아예 없앰 */
+}
+#r-preview .card {
+  margin: 4px !important; /* 카드 형태의 여백도 최소화 */
+  width: calc(100% - 8px) !important;
+  box-sizing: border-box !important;
+}
+
+/* ------------------------------------------------------------- */
+/* BINGO: Fix Inline Style Override for Block Split              */
+/* ------------------------------------------------------------- */
+#blockListWrapper {
+  width: 25% !important;
+  min-width: 140px !important;
+  max-width: 200px !important;
+  flex: none !important;
+}
+
+#blockFormWrapper {
+  width: 75% !important;
+  flex: 1 1 auto !important;
+}
+
+#blockResizer {
+  display: none !important; /* Remove the invisible resizer bar between them */
+}
+
+
+/* ------------------------------------------------------------- */
+/* Editor Full Width Fix & Cleanup                               */
+/* ------------------------------------------------------------- */
+#blockFormWrapper.card {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  flex: 1 1 auto !important; /* It's flex item in .split, so it will take the rest of space */
+}
+
+#blockForm {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 16px 24px !important; /* Proper internal spacing for text */
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+}
+
+#blockListWrapper.card {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+
+/* ------------------------------------------------------------- */
+/* UI Fixing & Extreme Space Economy                             */
+/* ------------------------------------------------------------- */
+
+/* 1. 블록 목록 UI 복구 및 여백 경제화 */
+#blockListWrapper {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#blockListWrapper > .row {
+  display: flex !important;
+  flex-wrap: nowrap !important; /* 가로 고정 */
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 8px !important;
+  background: var(--sf1) !important;
+  border-bottom: 1px solid var(--bd) !important;
+  margin: 0 !important;
+}
+
+#blockListWrapper > .row span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--tx1) !important;
+}
+
+#delBlockBtn {
+  flex: none !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+#blockList {
+  padding: 4px !important; /* 목록 내부 낭비 여백 축소 */
+}
+
+/* 2. 편집기 내부 패딩 극단적 축소 */
+#blockForm {
+  padding: 8px 12px !important; /* 기존 16px 24px -> 8px 12px 로 대폭 축소 */
+}
+
+/* 3. 편집기 상단 툴바(태그메뉴) 높이 및 간격 압축 */
+#blockForm .toolbar, #blockForm .row {
+  margin-bottom: 8px !important; /* 기존 20px -> 8px */
+  padding-bottom: 8px !important; /* 기존 12px -> 8px */
+  gap: 4px !important;
+}
+#blockForm .toolbar button, #blockForm .row button {
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+}
+
+/* 4. 전체 단(Column) 간 경계 여백 제거 */
+.app {
+  gap: 0 !important;
+}
+.app > aside, .app > main {
+  border-width: 1px !important; /* 얇은 테두리만 남기고 여백 없음 */
+}
+
+/* 텍스트 입력창 높이 극대화 (불필요한 폼 마진 제거) */
+#blockForm .field {
+  margin-bottom: 8px !important;
+}
+
+
+/* ------------------------------------------------------------- */
+/* Toolbar & Editor Final Clean-up                               */
+/* ------------------------------------------------------------- */
+
+/* 1. 상단 타이틀 "텍스트 블록"과 태그 버튼(툴바) 분리 정리 */
+#blocks > .row {
+  display: flex !important;
+  flex-direction: column !important; /* 위: 텍스트블록 제목, 아래: 버튼들 */
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid var(--bd) !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important; /* 여기는 줄바꿈 금지 */
+}
+
+/* "텍스트 블록" 텍스트 */
+#blocks > .row > div:first-child {
+  font-size: 15px !important;
+  font-weight: bold !important;
+  color: var(--tx1) !important;
+  margin-bottom: 4px !important;
+}
+
+/* 태그 버튼들 그룹 (툴바) */
+#blocks > .row > .toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important; /* 버튼 그룹 안에서만 줄바꿈 허용 */
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+/* 버튼 크기 및 색상 */
+#blocks > .row > .toolbar > button {
+  flex: 1 1 auto !important;
+  min-width: 45px !important;
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+  background: var(--sf1) !important;
+  border: 1px solid var(--bd) !important;
+  border-radius: 4px !important;
+}
+
+/* 2. 편집기 본문(textarea) 회색/흰색 깨짐 및 여백 정리 */
+#blockForm .field {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+#blockForm .field > div {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-bottom: 6px !important;
+  color: var(--tx2) !important;
+}
+
+#blockForm textarea {
+  background: var(--bg) !important; /* 어두운 메인 배경색으로 통일 */
+  border: 1px solid var(--bd) !important;
+  color: var(--tx1) !important;
+  padding: 12px !important;
+  border-radius: 6px !important;
+  width: 100% !important;
+  min-height: 200px !important; /* 텍스트 입력창 높이 확보 */
+  box-sizing: border-box !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important; /* 텍스트 창 느낌 부여 */
+}
+
+#blockFormWrapper {
+  background: var(--sf1) !important; /* 폼 바깥 패널 색상 */
+}
+
+/* "편집기"라는 작은 타이틀도 깔끔하게 */
+#blockFormWrapper > div:first-child {
+  font-size: 13px !important;
+  color: var(--tx2) !important;
+  margin-bottom: 8px !important;
+  padding: 8px 12px 0 12px !important;
+}
+
+
+/* ------------------------------------------------------------- */
+/* Editor White Background & Extreme Space Economy               */
+/* ------------------------------------------------------------- */
+
+/* 1. 불필요한 "편집기" 타이틀 텍스트 완전 숨김 (공간 낭비 제거) */
+#blockFormWrapper > div:first-child {
+  display: none !important;
+}
+
+/* 2. 편집기 내부(blockForm) 갭과 패딩 극단적 축소 */
+#blockForm {
+  gap: 4px !important; /* 기존 인라인 10px 무시 */
+  padding: 4px 8px !important;
+}
+
+/* 3. 라벨("본문")과 입력창 사이의 간격 최소화 */
+#blockForm .field {
+  margin-bottom: 4px !important;
+}
+#blockForm .field > div {
+  margin-bottom: 2px !important;
+  font-size: 11px !important;
+}
+
+/* 4. 편집기 본문 텍스트 에디터 흰색 배경 처리 */
+#blockForm textarea, #blockForm input[type="text"] {
+  background: #ffffff !important;
+  color: #000000 !important; /* 흰 배경에 검은 글씨 */
+  border: 1px solid #a0a0a0 !important;
+  padding: 8px 10px !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+  caret-color: #000000 !important; /* 커서 색상도 검정으로 */
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* 포커스 시 테두리 강조 */
+#blockForm textarea:focus, #blockForm input[type="text"]:focus {
+  border-color: #2563eb !important;
+  outline: none !important;
+}
+
+
+/* === base: ipad-white top lift === */
+#blocks > .row { margin-top: 0 !important; padding-top: 0 !important; }
+#blockSplitContainer { margin-top: 0 !important; }
+#blockListWrapper, #blockFormWrapper { margin-top: 0 !important; }
+#blockForm { padding-top: 2px !important; }
+
+
+/* === targeted label/spacing fix === */
+#blocks > .row .btn {
+  color: #111 !important;
+}
+
+/* Hide the small gray "본문" label only inside the text block editor area */
+#blockForm .field > div {
+  display: none !important;
+}
+
+/* Make the editor area sit flush to the top bar */
+#blockForm .field {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+#blockForm textarea {
+  margin-top: 0 !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+}
+#blockForm { padding-top: 4px !important; gap: 6px !important; } /* other blocks normal */
+
+
+/* === Hide the label specifically in the block form editor === */
+
+
+/* Remove spacing in the stack so the textarea touches the top */
+
+
+#blockForm textarea {
+  margin-top: 0 !important;
+  flex: 1 1 auto !important;
+  /* Reset previous minHeight hardcodes from field function */
+}
+
+/* Remove blockForm padding so it flushes up */
+#blockForm { padding-top: 4px !important; gap: 6px !important; } /* other blocks normal */
+
+
+/* Bulletproof label hider for ONLY the main text block */
+#blockForm .stack.hide-label > span.tiny {
+  display: none !important;
+}
+#blockForm .stack.hide-label {
+  margin-top: 0 !important;
+  gap: 0 !important;
+}
+
+
+/* === 상단 툴바와 아래 편집기 사이의 가로 구분선 및 여백 제거 === */
+#blocks > .row {
+  border-bottom: none !important; /* 가로 구분선 제거 */
+  padding-bottom: 0 !important;   /* 하단 여백 제거 */
+}
+
+/* 스플릿 컨테이너(블록목록+편집기)를 위로 더 바짝 올림 */
+#blockSplitContainer {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+#blockForm {
+  padding-top: 0 !important; /* 편집기 윗단 패딩도 완전 제거 */
+}
+
+
+/* === 최상단 메뉴, 툴바 버튼, 입력창 사이의 간격 50% 압축 === */
+
+/* 최상단 메인 탭 아래쪽 패딩 줄이기 */
+.tabs {
+  padding-bottom: 2px !important;
+}
+
+/* 탭 아래 컨텐츠 영역(view) 상단 패딩 축소 */
+.app > main > section.view {
+  padding-top: 2px !important;
+}
+
+/* 버튼들을 감싸는 .row 자체의 상하 마진 완전 제거 */
+#blocks > .row {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* 버튼 그룹 내부의 간격(gap)도 조금 더 타이트하게 */
+#blocks > .row > .toolbar {
+  gap: 3px !important;
+}
+
+/* 입력창(blockFormWrapper) 위쪽 간격 추가 압축 */
+#blockSplitContainer, #blockListWrapper, #blockFormWrapper {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+#blockForm {
+  padding-top: 2px !important;
+}
+
+
+/* === 최상단 메인 탭과 블록 메뉴 사이의 여백 완벽 제거 === */
+
+/* 가운데 패널(main)의 탭 영역 아래 마진/패딩 제거 */
+main.panel > .tabs {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* 가운데 패널의 뷰 영역(section#blocks) 상단 마진/패딩 완전 제거 */
+main.panel > section#blocks {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* 버튼들을 감싸는 첫번째 row의 상단 여백 제거 */
+#blocks > .row:first-of-type {
+  margin-top: 0 !important;
+  padding-top: 2px !important; /* 최소한의 1~2px만 유지 */
+}
+
+/* 탭 자체의 높이도 살짝 줄임 (선택) */
+main.panel > .tabs button.tab {
+  margin-bottom: 0 !important;
+}
+
+
+/* === 근본적인 원인 해결: .panel의 gap과 padding 제거 === */
+main.panel {
+  padding-top: 4px !important;
+  padding-bottom: 0 !important;
+  gap: 0 !important; /* 16px이나 되던 여백의 주범 */
+}
+aside.panel {
+  gap: 0 !important;
+}
+
+
+/* === 최상단 탭과 두 번째 툴바 버튼 높이 압축 === */
+
+/* 1. 최상단 메인 탭 (씬 메타, 텍스트 블록 등) */
+main.panel > .tabs button.tab,
+aside.panel > .tabs button.tab {
+  padding: 4px 6px !important;  /* 상하 패딩 축소 */
+  font-size: 11px !important;   /* 폰트 살짝 축소 */
+  min-height: 24px !important;  /* 최소 높이 강제 축소 */
+  line-height: 1.2 !important;
+}
+
+/* 2. 두 번째 툴바 버튼 (본문, 툴팁 등) */
+#blocks > .row > .toolbar > button,
+#blocks > .row > .toolbar > .btn {
+  padding: 3px 6px !important;  /* 상하 패딩 극한 축소 */
+  font-size: 10px !important;   /* 폰트 더 작게 */
+  min-height: 22px !important;  /* 버튼 높이 압축 */
+  line-height: 1.2 !important;
+  border-radius: 4px !important;
+}
+
+/* 3. 오른쪽 TXT 불러오기 등 툴바 내 다른 버튼들도 일괄 적용 */
+.toolbar .btn {
+  padding: 3px 6px !important;
+  min-height: 22px !important;
+  font-size: 10px !important;
+}
+
+/* 탭 전체 래퍼의 위아래 패딩도 얇게 조정 */
+.tabs {
+  padding-top: 2px !important;
+}
+
+
+/* === 상하 여백 완벽 동일화 (최상단~두번째 == 두번째~입력영역) === */
+
+/* 1. 최상단 탭과 두번째 툴바 사이의 마지막 남은 2px 패딩 제거 */
+#blocks > .row:first-of-type {
+  padding-top: 0 !important;
+}
+
+/* 2. 혹시 모를 내부 요소들의 잔여 마진/패딩 완벽 초기화 */
+.app > main > section.view {
+  padding-top: 0 !important;
+}
+main.panel > .tabs {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+#blocks > .row {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* 두번째 툴바와 입력창 사이의 간격도 0으로 재확인 */
+#blockSplitContainer,
+#blockListWrapper,
+#blockFormWrapper,
+#blockForm {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+
+/* === 상하 여백 완벽 균형 맞춤 (약간 벌려서 동일하게) === */
+
+/* 1. 최상단 탭과 두번째 툴바 사이 간격: 4px */
+main.panel > .tabs {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+.app > main > section.view {
+  padding-top: 0 !important;
+}
+#blocks > .row:first-of-type {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 2. 두번째 툴바와 본문 입력창(세번째) 사이 간격: 4px */
+#blocks > .row {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+#blockSplitContainer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+
+/* === 최상단 탭 수직 중앙 정렬 및 폰트 크기/높이 동일화 === */
+
+/* 2단(가운데)과 3단(오른쪽)의 최상단 탭 래퍼 패딩을 완벽 대칭으로 설정 */
+main.panel > .tabs,
+aside.panel > .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important; /* 상하 패딩을 동일하게 하여 버튼을 수직 중앙에 배치 */
+  align-items: center !important;
+  margin-bottom: 4px !important; /* 탭바 아래 여백은 별도 유지 */
+}
+
+/* 2단과 3단의 탭 버튼 자체의 폰트 크기와 높이를 100% 동일하게 강제 */
+main.panel > .tabs button.tab,
+.app > aside:nth-child(5) > .tabs button.tab {
+  font-size: 11px !important;
+  padding: 4px 6px !important;
+  min-height: 24px !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important; /* 텍스트 수직 중앙 정렬 */
+}
+
+/* 1단(왼쪽) 탭도 높이/정렬 보정 (안그러면 혼자 깨짐) */
+.app > aside:nth-child(1) .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+.app > aside:nth-child(1) .tab {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+
+/* === 3단 탭바 수직 중앙 정렬 강제 (specificity override) === */
+.app > aside:nth-child(5) > .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  margin-bottom: 4px !important;
+  align-items: center !important;
+}
+
+/* 혹시 모를 1단 탭바 오버라이드도 확실하게 */
+.app > aside:nth-child(1) > .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  align-items: center !important;
+}
+
+
+/* === 2단과 3단의 하얀 박스(뷰 컨텐츠) 높이 및 위치 완벽 동일화 === */
+
+/* 2단(main)과 3단(오른쪽 aside)의 .view 영역 패딩을 100% 똑같이 맞춤 */
+main.panel > section.view,
+.app > aside:nth-child(5) > section.view {
+  padding: 4px !important;
+  box-sizing: border-box !important;
+  height: 100% !important; /* 부모 높이 꽉 채움 */
+  flex: 1 1 auto !important;
+}
+
+/* 2단 씬메타 카드와 3단 미리보기 카드가 뷰 안에서 꽉 차게 */
+main.panel > section.view > .card,
+.app > aside:nth-child(5) > section.view > .card {
+  height: 100% !important;
+  margin: 0 !important; /* 상하좌우 마진 0으로 동일하게 */
+  box-sizing: border-box !important;
+}
+
+/* 3단 카드 내부 여백이 너무 타이트하면 2단과 다르게 보일 수 있으니 살짝 보정 */
+#r-preview .card {
+  width: 100% !important;
+}
+
+
+/* === 1단 (좌측 레일) 모바일 최적화 및 어수선함 정리 === */
+
+/* 좌측 패널 가로폭 더 축소 (130px -> 110px) */
+.app {
+  grid-template-columns: 110px 6px 1fr 6px 170px !important;
+}
+
+/* 최상단 타이틀 영역 숨김 (모바일에서 공간만 차지함) */
+.app > aside:nth-child(1) > .stack:first-child {
+  display: none !important;
+}
+
+/* 패널 전체 상하 패딩 축소 */
+.app > aside:nth-child(1) {
+  padding: 4px !important;
+  gap: 4px !important;
+}
+
+/* 프로젝트 타이틀 라벨 숨김 & 인풋 압축 */
+.app > aside:nth-child(1) > .card.stack:nth-child(2) > label {
+  display: none !important;
+}
+#projTitle {
+  font-size: 11px !important;
+  padding: 4px 6px !important;
+  margin-bottom: 2px !important;
+  text-align: center;
+}
+#projTitle::placeholder {
+  color: #ccc;
+}
+
+/* 새프로젝트 / 추가 버튼을 한 줄의 아이콘 버튼으로 변경 */
+.app > aside:nth-child(1) > .card.stack:nth-child(2) > .toolbar {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+}
+#newProjBtn, #loadJsonBtn {
+  flex: 1 !important;
+  font-size: 0 !important; /* 원래 글자 숨김 */
+  min-height: 24px !important;
+  padding: 4px !important;
+  display: flex; justify-content: center; align-items: center;
+}
+#newProjBtn::after { content: "📄 새작업"; font-size: 10px; }
+#loadJsonBtn::after { content: "📂 열기"; font-size: 10px; }
+
+/* 씬 목록 헤더 영역 압축 및 아이콘화 */
+.app > aside:nth-child(1) > .card.stack:nth-child(3) > .row {
+  margin-bottom: 2px !important;
+}
+.app > aside:nth-child(1) > .card.stack:nth-child(3) > .row > span {
+  font-size: 10px !important;
+}
+#delSceneBtn, #addSceneBtn {
+  font-size: 0 !important;
+  padding: 2px 4px !important;
+  min-height: 20px !important;
+  border-radius: 4px !important;
+  display: flex; justify-content: center; align-items: center;
+}
+#delSceneBtn::after { content: "🗑️"; font-size: 11px; }
+#addSceneBtn::after { content: "➕"; font-size: 11px; }
+
+/* 씬 리스트 아이템 높이 및 여백 축소 */
+#sceneList {
+  padding: 0 !important;
+}
+#sceneList .item {
+  padding: 4px !important;
+  margin: 2px 0 !important;
+  font-size: 10px !important;
+  border-radius: 4px !important;
+}
+#sceneList .item .tiny {
+  font-size: 9px !important;
+}
+
+/* 하단 저장 버튼들 압축 */
+.app > aside:nth-child(1) > .stack:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.app > aside:nth-child(1) > .stack:last-child > button {
+  font-size: 10px !important;
+  padding: 4px !important;
+  min-height: 22px !important;
+}
+
+/* 1단 내부 카드들의 무거운 박스 섀도우/보더/패딩 제거 */
+.app > aside:nth-child(1) > .card {
+  padding: 4px !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+
+/* === CRITICAL GRID FIX === */
+/* resizer가 display:none 이므로 자식은 3개뿐. 따라서 그리드 컬럼도 3개여야 함 */
+.app {
+  grid-template-columns: 110px 1fr 180px !important;
+}
+
+
+/* === 1단/3단 폭 재조정 (가로 스크롤 방지 및 안정성 확보) === */
+.app {
+  grid-template-columns: 140px 1fr 230px !important;
+}
+
+/* 1단/3단 내부 카드나 리스트들이 새 폭에 맞게 유연하게 자리잡도록 보장 */
+.app > aside:nth-child(1),
+.app > aside:nth-child(5) {
+  overflow-x: hidden !important; /* 바깥 패널 가로 스크롤 완전 차단 */
+}
+
+/* 프로젝트 타이틀 등 텍스트가 140px 안에 예쁘게 들어가게 정렬 */
+#projTitle {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+
+/* === 1px 점프 버그 수정 및 3단 폭 10px 증가 === */
+
+/* 1. 버튼 터치/호버 시 위로 1px 튀어오르는 현상 완전 제거 */
+.btn:hover, .btn:active, .tab:hover, .tab:active {
+  transform: none !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 2. 3단 폭 +10px (230px -> 240px) */
+.app {
+  grid-template-columns: 140px 1fr 240px !important;
+}
+
+
+/* === 1단 버튼 중앙 정렬 & 2단 우측 라인 정렬 === */
+
+/* 1단 "새 작업", "열기" 아이콘/텍스트 완벽 중앙 정렬 */
+#newProjBtn, #loadJsonBtn {
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+#newProjBtn::after, #loadJsonBtn::after {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+/* 2단 편집기(본문 창) 우측 끝 라인을 탭 라인과 일치시키기 */
+/* 부모의 기본 우측 패딩을 깎아서 텍스트에디터가 우측으로 더 뻗어나가게 함 */
+#blockForm {
+  padding-right: 0 !important; /* 우측 빈공간 제거 */
+}
+#blockForm textarea {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-right: 0 !important;
+}
+
+/* 전체 뷰 패널의 우측 패딩도 깎아서 탭과 1:1로 맞춤 */
+main.panel > section.view {
+  padding-right: 0 !important;
+}
+
+/* 스크롤바가 생길 경우를 대비해 스크롤바가 컨텐츠를 밀지 않게 오버플로우 처리 개선 */
+#blocks {
+  padding-right: 2px !important;
+}
+
+
+/* === 1단 버튼 텍스트 정렬 완벽 수정 (Flex item 충돌 해결) === */
+
+/* 기존에 꼬였던 flex 속성 초기화하고 절대 위치(Absolute)로 텍스트 덮어쓰기 */
+#newProjBtn, #loadJsonBtn {
+  position: relative !important;
+  color: transparent !important; /* 원본 텍스트 '새 프로젝트' 숨김 */
+  display: block !important;     /* Flex 해제하여 자식 노드 충돌 방지 */
+}
+
+/* ::after 요소가 버튼 전체 영역을 덮고 그 안에서 수직/수평 중앙 정렬되도록 설정 */
+#newProjBtn::after, #loadJsonBtn::after {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* 각각 버튼 고유의 색상 유지 */
+#newProjBtn::after {
+  color: #ffffff !important;
+}
+#loadJsonBtn::after {
+  color: #111111 !important;
+}
+
+
+/* === 2단 인라인 & 브랜치 탭 내부 간격 축소 === */
+
+/* 인라인/브랜치 탭 내부의 스플릿 컨테이너 (목록과 폼 사이의 틈) */
+#inline .split,
+#branch .split {
+  gap: 6px !important; /* 기존 16px(1rem) 틈새를 6px로 축소 */
+}
+
+/* 양쪽 하얀 박스(.card)의 불필요한 기본 마진 제거 */
+#inline .split .card,
+#branch .split .card {
+  margin: 0 !important;
+}
+
+/* 폼 영역이 너무 크면 부담스러울 수 있으니 패딩도 살짝 다이어트 */
+#inlineForm,
+#branchForm {
+  padding: 12px 16px !important; 
+}
+
+
+/* === 1단 씬 목록 삭제/추가 아이콘 중앙 정렬 (Flex item 충돌 해결) === */
+
+#delSceneBtn, #addSceneBtn {
+  position: relative !important;
+  color: transparent !important; /* 원본 텍스트 숨김 */
+  display: block !important;     /* Flex 해제 */
+}
+
+#delSceneBtn::after, #addSceneBtn::after {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  color: #ffffff !important; /* 아이콘 색상은 하얗게 (원본 글씨 색상 따라감) */
+}
+
+/* 추가 버튼은 기본 버튼이므로 아이콘 색상을 검정으로 */
+#addSceneBtn::after {
+  color: #111111 !important;
+}
+
+
+/* === 1단 씬 삭제/추가 버튼 크기 복구 === */
+
+/* 내용물이 투명해지면서 버튼 너비가 무너지는 현상을 막기 위해 최소 너비 지정 */
+#delSceneBtn, #addSceneBtn {
+  min-width: 32px !important; /* 버튼이 너무 좁아지지 않게 고정 폭 부여 */
+  height: 24px !important;    /* 높이도 명시적으로 고정 */
+}
+
+</style>
+</head>
+<body>
+<!-- iPad rebuild note: 3-column layout rebuilt from v1.0 with fixed widths 240 / flexible center / 320, resizers disabled, Safari-compatible JS fallbacks applied. -->
+<!-- Datalists for Auto-completion -->
+<datalist id="listStats"></datalist>
+<datalist id="listLabels"></datalist>
+<datalist id="listIllusts"></datalist>
+
+<div class="app" id="appGrid">
+  <aside class="panel">
+    <div class="stack">
+      <div class="row" style="justify-content:space-between">
+        <div><div class="title">Narrative Editor</div><div class="muted">V1.0 White Editor</div></div>
+        <button class="btn" id="themeBtn">◐</button>
+      </div>
+    </div>
+    <div class="card stack">
+      <label class="tiny">프로젝트 제목</label>
+      <input id="projTitle" placeholder="프로젝트 제목" />
+      <div class="toolbar" style="flex-shrink:0;">
+        <button class="btn btn-primary" id="newProjBtn">새 프로젝트</button>
+        <button class="btn" id="loadJsonBtn">프로젝트/씬 추가</button>
+      </div>
+      <input type="file" id="jsonInput" accept=".json,.txt,.bytes" multiple class="hidden" />
+      <input type="file" id="txtInput" accept=".txt,.bytes" multiple class="hidden" />
+      <input type="file" id="pathInput" class="hidden" />
+    </div>
+    <div class="card stack" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <div class="row" style="justify-content:space-between;align-items:center;flex-shrink:0;">
+        <span>씬 목록</span>
+        <div class="row" style="gap:4px;">
+          <button class="btn btn-danger" id="delSceneBtn" style="padding:4px 8px;font-size:12px;">- 삭제</button>
+          <button class="btn" id="addSceneBtn" style="padding:4px 8px;font-size:12px;">+ 씬</button>
+        </div>
+      </div>
+      <div class="list" id="sceneList" style="flex:1; overflow-y:auto;"></div>
+    </div>
+    <div class="stack" style="margin-top:auto">
+      
+      <button class="btn" id="exportSceneBtn">현재 씬 JSON 저장</button>
+      <button class="btn" id="exportTxtBtn">현재 씬 TXT 저장</button>
+    </div>
+  </aside>
+
+  <div class="resizer" id="resizerL"></div>
+  <main class="panel">
+    <div class="tabs">
+      <button class="tab active" data-view="meta">씬 메타</button>
+      <button class="tab" data-view="blocks">텍스트 블록</button>
+      <button class="tab" data-view="inline">인라인</button>
+      <button class="tab" data-view="branch">브랜치</button>
+      
+    </div>
+
+    <section class="view active" id="meta">
+      <div class="card grid" id="metaForm"></div>
+    </section>
+
+    <section class="view" id="blocks">
+      <div class="row" style="justify-content:space-between;align-items:center;flex-shrink:0;">
+        <div class="toolbar" style="flex-shrink:0;">
+          <button class="btn" data-add="text">본문</button>
+          <button class="btn" data-add="tooltip">툴팁</button>
+          <button class="btn" data-add="footnote">각주</button>
+          <button class="btn" data-add="inline">인라인</button>
+          <button class="btn" data-add="branch">브랜치</button>
+          <button class="btn" data-add="illust">일러스트</button>
+          <button class="btn" data-add="jump">점프</button>
+          <button class="btn" data-add="label">라벨</button>
+          <button class="btn btn-primary" id="importTxtBtn">TXT 불러오기</button>
+        </div>
+      </div>
+      <div class="split" id="blockSplitContainer" style="height:100%;">
+        <div class="card stack" id="blockListWrapper" style="width: 25% !important; min-width: 140px !important; max-width: 200px !important; flex-shrink:0; display:flex; flex-direction:column; overflow:hidden;">
+          <div class="row" style="justify-content:space-between; flex-shrink:0;"><span>목록</span><button class="btn btn-danger" id="delBlockBtn">선택 삭제</button></div>
+          <div class="list" id="blockList" style="flex:1; overflow-y:auto;"></div>
+        </div>
+
+        <div id="blockResizer" style="display:none !important;">
+           <div style="position:absolute; left:5px; top:0; bottom:0; width:2px; background:var(--bd);"></div>
+        </div>
+
+        <div class="card stack" id="blockFormWrapper" style="flex: 1; display:flex; flex-direction:column; min-height:0; overflow:hidden; font-size:15px;">
+          <div style="flex-shrink:0; font-size:16px; font-weight:600;">편집기</div>
+          <div id="blockForm" style="display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow-y:auto; padding-right:4px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="inline">
+      <div class="split" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="card stack">
+          <div class="row" style="justify-content:space-between"><span>inlineChoices</span><button class="btn" id="addInlineBtn">+ 추가</button></div>
+          <div class="list" id="inlineList"></div>
+        </div>
+        <div class="card stack" style="overflow-y:auto; max-height:calc(100vh - 120px);">
+          <div>편집기 <button class="btn btn-danger" id="delInlineBtn" style="float:right;padding:2px 8px">삭제</button></div>
+          <div id="inlineForm" class="grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="branch">
+      <div class="split" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="card stack">
+          <div class="row" style="justify-content:space-between"><span>branches</span><button class="btn" id="addBranchBtn">+ 추가</button></div>
+          <div class="list" id="branchList"></div>
+        </div>
+        <div class="card stack" style="overflow-y:auto; max-height:calc(100vh - 120px);">
+          <div>편집기 <button class="btn btn-danger" id="delBranchBtn" style="float:right;padding:2px 8px">삭제</button></div>
+          <div id="branchForm" class="grid"></div>
+        </div>
+      </div>
+    </section>
+
+    
+  </main>
+
+  <div class="resizer" id="resizerR"></div>
+  <aside class="panel">
+    <div class="tabs">
+      <button class="tab active" data-rview="r-preview">미리보기</button>
+      <button class="tab" data-rview="r-sim">시뮬레이터 (Play)</button>
+      <button class="tab" data-rview="r-flow">플로우 차트</button>
+      <button class="tab" data-rview="r-proj-flow">프로젝트 전체구조</button>
+      <button class="tab" data-rview="r-out">출력</button>
+    </div>
+
+    <!-- Preview Tab -->
+    <section class="view active" id="r-preview">
+      <div class="card stack">
+        <div class="row" style="justify-content:space-between"><span>미리보기</span><span class="badge" id="validBadge">대기</span></div>
+        <div id="previewBox" style="white-space:pre-wrap; background:var(--sf2); padding:1rem; border-radius:var(--r1);"></div>
+      </div>
+    </section>
+
+    <!-- Simulator Tab -->
+    <section class="view" id="r-sim">
+      <div class="card stack">
+        <div class="row" style="justify-content:space-between; align-items:center; flex-shrink:0;">
+           <span>인게임 시뮬레이터</span>
+           <button class="btn btn-primary" id="btnRunSim">▶ 재생 / 재시작</button>
+        </div>
+        <div id="simBox" class="stack" style="white-space:pre-wrap; background:#111; color:#eee; padding:1rem; border-radius:var(--r1); font-size:16px; line-height:1.6; cursor:pointer;">
+           <div class="muted" style="text-align:center; margin-top:2rem;">재생 버튼을 누르면 시작합니다.<br><br><span style="font-size:0.9em;color:#888;">(화면 아무 곳이나 클릭해도 다음으로 넘어갑니다)</span></div>
+        </div>
+        <button class="btn btn-primary" id="simNextBtn" style="padding:0.8rem; font-size:1rem; flex-shrink:0; opacity:0.8;">▼ 다음 진행 ▼</button>
+      </div>
+    </section>
+
+    <!-- Flowchart Tab -->
+    <section class="view" id="r-flow">
+      <div class="card stack">
+         <div class="row" style="justify-content:space-between; align-items:center">
+           <span>점프 & 라벨 구조</span>
+           <button class="btn btn-primary" id="btnRefreshFlow">↻ 갱신</button>
+         </div>
+         <div id="flowBox" style="background:#fff; color:#000; padding:1rem; border-radius:var(--r1);">
+           <div class="muted">갱신 버튼을 누르세요.</div>
+         </div>
+      </div>
+    </section>
+
+        <!-- Project Flow Tab -->
+    <section class="view" id="r-proj-flow">
+      <div class="card stack">
+         <div class="row" style="justify-content:space-between; align-items:center">
+           <span>전체 씬 연결 (브랜치/자동진행)</span>
+           <button class="btn btn-primary" id="btnRefreshProjFlow">↻ 전체 갱신</button>
+         </div>
+         <div id="projFlowBox" style="background:#fff; color:#000; padding:1rem; border-radius:var(--r1);">
+           <div class="muted">갱신 버튼을 누르세요.</div>
+         </div>
+      </div>
+    </section>
+
+    <!-- Outputs Tab -->
+    <section class="view stack" id="r-out" style="overflow-y:auto; padding-bottom: 1rem;">
+      <div class="card stack"><div>TXT 출력</div><div class="code" id="txtBox"></div></div>
+      <div class="card stack"><div>JSON 출력</div><div class="code" id="jsonBox"></div></div>
+    </section>
+  </aside>
+</div>
+
+<script>
+// Initialize Mermaid
+mermaid.initialize({ startOnLoad: false, theme: 'base' });
+
+const uid = () => Math.random().toString(36).slice(2,10);
+const newReq = () => ({ requiredEndings: [], requiredVisitedChapters: [], requiredVisitedScenes: [], requiredStats: [] });
+const newOutcome = () => ({ outcomeType: 'stat', key: '', intValue: 0, boolValue: false });
+const newStatReq = () => ({ key: '', minValue: 0 });
+const newScene = () => ({
+  id: uid(), name: '새 씬',
+  sceneData: { sceneId:'Scene01', pov:'', textFile:'', bgmFile:'', sfxFile:'', isEnding:false, endingId:'', endingImg:'', endingTitle:'', endingDesc:'', autoAdvance:false, nextChapterId:'', nextSceneId:'', illusts:[], bgms:[], sfxs:[], inlineChoices:[], branches:[], effects:[] },
+  blocks: []
+});
+
+let project = { title: 'New Project', scenes: [newScene()] };
+let state = { sceneId: project.scenes[0].id, selectedBlockIds: [], lastBlockIdx: -1, inlineIdx: 0, branchIdx: 0, assetMode: 'illusts' };
+let pathCallback = null;
+
+const el = {
+  projTitle: document.getElementById('projTitle'), sceneList: document.getElementById('sceneList'),
+  metaForm: document.getElementById('metaForm'), blockList: document.getElementById('blockList'), blockForm: document.getElementById('blockForm'),
+  inlineList: document.getElementById('inlineList'), inlineForm: document.getElementById('inlineForm'),
+  branchList: document.getElementById('branchList'), branchForm: document.getElementById('branchForm'),
+  assetEditor: document.getElementById('assetEditor'), previewBox: document.getElementById('previewBox'),
+  txtBox: document.getElementById('txtBox'), jsonBox: document.getElementById('jsonBox'), validBadge: document.getElementById('validBadge')
+};
+
+const getScene = () => project.scenes.find(s => s.id === state.sceneId) || project.scenes[0];
+const getBlock = () => {
+  if (state.selectedBlockIds.length !== 1) return null;
+  return getScene().blocks.find(b => b.id === state.selectedBlockIds[0]);
+};
+
+function normalizePath(path) {
+  let v = String(path||'').split('\\').join('/'); 
+  const idx = v.lastIndexOf('/Resources/');
+  if (idx !== -1) v = v.slice(idx + 11);
+  return v.replace(/\.[^/.]+$/, ''); 
+}
+
+function field(label, val, setter, opts={}) {
+  const w = document.createElement('div'); w.className = 'stack' + (opts.full ? ' full' : '');
+  w.innerHTML = `<span class="tiny">${label}</span>`;
+  const tag = opts.tag || 'input';
+  const inp = document.createElement(tag);
+  if(tag==='textarea') { 
+    inp.value = val||''; 
+    inp.style.minHeight = opts.tall ? '420px' : '80px'; 
+    inp.style.resize = 'vertical'; 
+    inp.style.fontFamily = 'inherit'; 
+    inp.style.fontSize = opts.tall ? '17px' : '14px'; 
+    inp.style.lineHeight = opts.tall ? '1.75' : '1.4'; 
+  }
+  else if(opts.type==='checkbox') { inp.type = 'checkbox'; inp.checked = !!val; inp.style.width='auto'; }
+  else { inp.value = val||''; if(opts.type) inp.type = opts.type; }
+
+  if(opts.list) inp.setAttribute('list', opts.list);
+
+  inp.oninput = e => { setter(opts.type==='checkbox' ? e.target.checked : e.target.value); };
+  w.appendChild(inp);
+  return w;
+}
+
+function pathField(label, val, setter, opts={}) {
+  const w = document.createElement('div'); w.className = 'stack' + (opts.full ? ' full' : '');
+  w.innerHTML = `<span class="tiny">${label}</span>`;
+  const row = document.createElement('div'); row.className = 'row';
+  const inp = document.createElement('input'); inp.value = val||''; inp.style.flex = '1'; inp.style.minWidth = '0';
+  inp.oninput = e => setter(e.target.value);
+  const btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = '찾기';
+  btn.onclick = () => {
+    pathCallback = (res) => { inp.value = res; setter(res); };
+    document.getElementById('pathInput').accept = opts.accept||'';
+    document.getElementById('pathInput').click();
+  };
+  row.appendChild(inp); row.appendChild(btn); w.appendChild(row);
+  return w;
+}
+
+// ---------------- Datalists (Auto Complete) ----------------
+function updateDatalists() {
+  const stats = new Set();
+  const labels = new Set();
+  const illusts = new Set();
+
+  project.scenes.forEach(s => {
+    s.blocks.forEach(b => {
+      if (b.type === 'label' && b.label) labels.add(b.label);
+      if (b.type === 'illust' && b.key) illusts.add(b.key);
+    });
+    const scanOutcomes = (arr) => {
+      arr.forEach(x => {
+        if(x.jumpLabel) labels.add(x.jumpLabel);
+        (x.outcomes||[]).forEach(o => { if(o.outcomeType==='stat' && o.key) stats.add(o.key); });
+        (((x.requirements && x.requirements.requiredStats) || [])).forEach(r => { if(r.key) stats.add(r.key); });
+      });
+    };
+    scanOutcomes(s.sceneData.inlineChoices || []);
+    scanOutcomes(s.sceneData.branches || []);
+    (s.sceneData.illusts||[]).forEach(i => { if(i.key) illusts.add(i.key); });
+  });
+
+  document.getElementById('listStats').innerHTML = [...stats].map(x=>`<option value="${x}">`).join('');
+  document.getElementById('listLabels').innerHTML = [...labels].map(x=>`<option value="${x}">`).join('');
+  document.getElementById('listIllusts').innerHTML = [...illusts].map(x=>`<option value="${x}">`).join('');
+}
+
+// ---------------- Editors ----------------
+
+function renderScenes() {
+  el.sceneList.innerHTML = '';
+  project.scenes.forEach(s => {
+    const div = document.createElement('div'); div.className = 'item' + (s.id===state.sceneId?' active':'');
+    div.innerHTML = `<div>${s.name}</div><div class="tiny">${s.sceneData.sceneId}</div>`;
+    div.onclick = () => { 
+      state.sceneId = s.id; 
+      state.selectedBlockIds = s.blocks[0] ? [s.blocks[0].id] : []; 
+      state.lastBlockIdx = s.blocks.length ? 0 : -1;
+      state.inlineIdx = 0; state.branchIdx = 0; 
+      fullRender(); 
+    };
+    el.sceneList.appendChild(div);
+  });
+}
+
+function renderMeta() {
+  const s = getScene(); const d = s.sceneData; el.metaForm.innerHTML = '';
+  const u = () => { renderScenes(); renderOutputs(); updateDatalists(); };
+
+  const basicInfo = document.createElement('div'); basicInfo.className = 'grid full'; basicInfo.style.gridColumn = '1/-1';
+  basicInfo.append(
+    field('씬 이름(에디터용)', s.name, v=>{s.name=v; u()}), field('sceneId', d.sceneId, v=>{d.sceneId=v; u()}),
+    field('pov', d.pov, v=>{d.pov=v; u()}), pathField('textFile', d.textFile, v=>{d.textFile=v; u()}, {accept:'.txt,.bytes'}),
+    pathField('bgmFile', d.bgmFile, v=>{d.bgmFile=v; u()}, {accept:'.mp3,.wav'}), pathField('sfxFile', d.sfxFile, v=>{d.sfxFile=v; u()}, {accept:'.mp3,.wav'}),
+    field('isEnding', d.isEnding, v=>{d.isEnding=v; u()}, {type:'checkbox'}), field('endingId', d.endingId, v=>{d.endingId=v; u()}),
+    pathField('endingImg', d.endingImg, v=>{d.endingImg=v; u()}, {accept:'.png,.jpg,.webp', full:true}),
+    field('endingTitle', d.endingTitle, v=>{d.endingTitle=v; u()}, {full:true}), field('endingDesc', d.endingDesc, v=>{d.endingDesc=v; u()}, {tag:'textarea', full:true}),
+    field('nextChapterId', d.nextChapterId, v=>{d.nextChapterId=v; u()}), field('nextSceneId', d.nextSceneId, v=>{d.nextSceneId=v; u()}),
+    field('autoAdvance', d.autoAdvance, v=>{d.autoAdvance=v; u()}, {type:'checkbox'})
+  );
+  el.metaForm.appendChild(basicInfo);
+
+  const makeAssetList = (title, arrName, accept) => {
+    const wrap = document.createElement('div'); wrap.className = 'stack card full'; wrap.style.marginTop = '1rem'; wrap.style.gridColumn = '1/-1';
+    const head = document.createElement('div'); head.className = 'row'; head.style.justifyContent = 'space-between';
+    head.innerHTML = `<strong>${title}</strong>`;
+    const btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = '+ 추가';
+    btn.onclick = () => { d[arrName].push({key:'', path:''}); u(); renderMeta(); };
+    head.appendChild(btn); wrap.appendChild(head);
+
+    d[arrName].forEach((it, i) => {
+      const g = document.createElement('div'); g.className = 'row'; g.style.background = 'var(--sf3)'; g.style.padding = '8px'; g.style.borderRadius = '4px'; g.style.alignItems = 'flex-end';
+      const keyField = field('Key (ID)', it.key, v=>{it.key=v; u();}); keyField.style.flex = '1';
+      const pField = pathField('Path (주소)', it.path, v=>{it.path=v; u();}, {accept}); pField.style.flex = '2';
+      const del = document.createElement('button'); del.className = 'btn btn-danger'; del.textContent = '삭제';
+      del.onclick = () => { d[arrName].splice(i,1); u(); renderMeta(); };
+      g.append(keyField, pField, del); wrap.appendChild(g);
+    });
+    el.metaForm.appendChild(wrap);
+  };
+
+  makeAssetList('일러스트 (Illusts)', 'illusts', '.png,.jpg,.webp');
+}
+
+function renderBlocks() {
+  const s = getScene(); el.blockList.innerHTML = '';
+  let dragSrcIds = [];
+
+  s.blocks.forEach((b, i) => {
+    const div = document.createElement('div');
+    const isActive = state.selectedBlockIds.includes(b.id);
+    div.className = 'item' + (isActive ? ' active' : '');
+    div.draggable = true;
+
+    const preview = b.type === 'tooltip' ? `[${b.word||'?'}] ${b.text||''}` : (b.text || b.inlineId || b.branchId || b.key || b.label || '(빈 블록)');
+    div.innerHTML = `<div><span class="badge">${i+1}. ${b.type}</span></div><div class="tiny" style="margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${preview}</div>`;
+
+    div.onclick = (e) => {
+      if (e.shiftKey && state.lastBlockIdx !== -1) {
+        const start = Math.min(state.lastBlockIdx, i);
+        const end = Math.max(state.lastBlockIdx, i);
+        state.selectedBlockIds = s.blocks.slice(start, end + 1).map(x => x.id);
+      } else if (e.ctrlKey || e.metaKey) {
+        if (isActive) state.selectedBlockIds = state.selectedBlockIds.filter(id => id !== b.id);
+        else state.selectedBlockIds.push(b.id);
+        state.lastBlockIdx = i;
+      } else {
+        state.selectedBlockIds = [b.id];
+        state.lastBlockIdx = i;
+      }
+      renderBlocks(); renderBlockForm();
+    };
+
+    div.ondragstart = (e) => {
+      if (!state.selectedBlockIds.includes(b.id)) {
+        dragSrcIds = [b.id];
+      } else {
+        dragSrcIds = [...state.selectedBlockIds];
+      }
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', b.id);
+      setTimeout(() => div.style.opacity = '0.4', 0);
+    };
+
+    div.ondragover = (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      div.style.borderTop = '2px solid var(--pr)';
+      div.style.paddingTop = '1.25rem';
+    };
+
+    div.ondragleave = () => { div.style.borderTop = ''; div.style.paddingTop = '.75rem'; };
+
+    div.ondrop = (e) => {
+      e.preventDefault(); div.style.borderTop = ''; div.style.paddingTop = '.75rem';
+      if (dragSrcIds.includes(b.id)) return; 
+      const blocksToMove = s.blocks.filter(x => dragSrcIds.includes(x.id));
+      s.blocks = s.blocks.filter(x => !dragSrcIds.includes(x.id));
+      s.blocks.splice(s.blocks.findIndex(x => x.id === b.id), 0, ...blocksToMove);
+      renderBlocks(); renderOutputs();
+    };
+
+    div.ondragend = () => {
+      div.style.opacity = '1';
+      document.querySelectorAll('#blockList .item').forEach(el => { el.style.borderTop = ''; el.style.paddingTop = '.75rem'; });
+    };
+
+    el.blockList.appendChild(div);
+  });
+}
+
+function renderBlockForm() {
+  el.blockForm.innerHTML = '';
+  if (state.selectedBlockIds.length === 0) { el.blockForm.innerHTML = '<div class="muted" style="grid-column:1/-1">블록을 선택하세요.</div>'; return; }
+  if (state.selectedBlockIds.length > 1) { el.blockForm.innerHTML = `<div class="muted" style="grid-column:1/-1">${state.selectedBlockIds.length}개의 블록이 다중 선택되었습니다.<br>이동하거나 일괄 삭제할 수 있습니다.</div>`; return; }
+
+  const b = getBlock(); if (!b) return;
+  const u = () => { updateDatalists(); renderBlocks(); renderOutputs(); };
+  if(b.type==='text') { 
+    const f = field('본문', b.text, v=>{b.text=v; u()}, {tag:'textarea', full:true}); 
+    f.classList.add('hide-label'); f.style.marginTop='-4px'; f.style.flex = '1'; f.style.display = 'flex'; f.style.flexDirection = 'column'; f.style.minHeight = '0';
+    const ta = f.querySelector('textarea');
+    ta.style.flex = '1'; ta.style.resize = 'none'; ta.style.minHeight = '0';
+    el.blockForm.append(f); 
+  }
+  if(b.type==='tooltip') { 
+    el.blockForm.append(field('대상 단어(ID)', b.word, v=>{b.word=v; u()}));
+    const f = field('설명 텍스트', b.text, v=>{b.text=v; u()}, {tag:'textarea', full:true}); 
+    f.style.flex = '1'; f.style.display = 'flex'; f.style.flexDirection = 'column'; f.style.minHeight = '0';
+    const ta = f.querySelector('textarea');
+    ta.style.flex = '1'; ta.style.resize = 'none'; ta.style.minHeight = '0';
+    el.blockForm.append(f); 
+  }
+  if(b.type==='footnote') el.blockForm.append(field('각주 내용', b.text, v=>{b.text=v; u()}, {tag:'textarea', full:true}));
+  if(b.type==='inline') el.blockForm.append(field('inlineId', b.inlineId, v=>{b.inlineId=v; u()}), field('표시 텍스트', b.text, v=>{b.text=v; u()}));
+  if(b.type==='branch') el.blockForm.append(field('branchId', b.branchId, v=>{b.branchId=v; u()}), field('표시 텍스트', b.text, v=>{b.text=v; u()}));
+  if(b.type==='illust') el.blockForm.append(field('illust key', b.key, v=>{b.key=v; u()}, {full:true, list:'listIllusts'}));
+  if(b.type==='jump'||b.type==='label') el.blockForm.append(field(b.type==='jump'?'점프 대상 라벨':'라벨명', b.label, v=>{b.label=v; u()}, {full:true, list:'listLabels'}));
+}
+
+function reqEditor(req, host, onDataChange, onRebuild) {
+  const wrap = document.createElement('div'); wrap.className = 'stack full card'; wrap.style.marginTop = '1rem';
+  wrap.innerHTML = '<div class="tiny">Requirements (콤마 구분)</div>';
+  wrap.append(
+    field('requiredEndings', (req.requiredEndings||[]).join(','), v=>{req.requiredEndings=v.split(',').map(x=>x.trim()).filter(Boolean); onDataChange()}, {full:true}),
+    field('requiredVisitedChapters', (req.requiredVisitedChapters||[]).join(','), v=>{req.requiredVisitedChapters=v.split(',').map(x=>x.trim()).filter(Boolean); onDataChange()}, {full:true}),
+    field('requiredVisitedScenes', (req.requiredVisitedScenes||[]).join(','), v=>{req.requiredVisitedScenes=v.split(',').map(x=>x.trim()).filter(Boolean); onDataChange()}, {full:true})
+  );
+
+  const statsHead = document.createElement('div'); statsHead.className = 'row'; statsHead.style.justifyContent = 'space-between';
+  statsHead.innerHTML = '<span class="tiny">requiredStats</span>';
+  const addStat = document.createElement('button'); addStat.className = 'btn'; addStat.textContent = '+ 조건';
+  addStat.onclick = () => { if(!req.requiredStats) req.requiredStats=[]; req.requiredStats.push({key:'', minValue:0}); onRebuild(); };
+  statsHead.appendChild(addStat); wrap.appendChild(statsHead);
+
+  (req.requiredStats||[]).forEach((r, idx) => {
+    const g = document.createElement('div'); g.className = 'grid card'; g.style.background = 'var(--sf3)';
+    g.appendChild(field('key', r.key, v=>{r.key=v; onDataChange();}, {list:'listStats'}));
+    g.appendChild(field('minValue', r.minValue, v=>{r.minValue=Number(v)||0; onDataChange();}, {type:'number'}));
+    const del = document.createElement('button'); del.className = 'btn btn-danger'; del.style.gridColumn = '1/-1'; del.textContent = '삭제';
+    del.onclick = () => { req.requiredStats.splice(idx,1); onRebuild(); };
+    g.appendChild(del); wrap.appendChild(g);
+  });
+  host.appendChild(wrap);
+}
+
+function outcomeEditor(arr, host, onDataChange, onRebuild) {
+  const wrap = document.createElement('div'); wrap.className = 'stack full card'; wrap.style.marginTop = '1rem';
+  const head = document.createElement('div'); head.className = 'row'; head.style.justifyContent = 'space-between';
+  head.innerHTML = '<span class="tiny">Outcomes (스탯, 플래그 등 결과)</span>';
+  const add = document.createElement('button'); add.className = 'btn'; add.textContent = '+ 결과';
+  add.onclick = () => { arr.push({outcomeType:'stat', key:'', intValue:0}); onRebuild(); };
+  head.appendChild(add); wrap.appendChild(head);
+
+  arr.forEach((o, idx) => {
+    const g = document.createElement('div'); g.className = 'grid card'; g.style.background = 'var(--sf3)';
+    g.appendChild(field('outcomeType (stat, flag, codex)', o.outcomeType, v=>{o.outcomeType=v; onDataChange();}, {full:true}));
+    g.appendChild(field('key', o.key, v=>{o.key=v; onDataChange();}, {list:'listStats'}));
+    g.appendChild(field('intValue', o.intValue, v=>{o.intValue=Number(v)||0; onDataChange();}, {type:'number'}));
+    const del = document.createElement('button'); del.className = 'btn btn-danger'; del.style.gridColumn = '1/-1'; del.textContent = '삭제';
+    del.onclick = () => { arr.splice(idx,1); onRebuild(); };
+    g.appendChild(del); wrap.appendChild(g);
+  });
+  host.appendChild(wrap);
+}
+
+function renderInline() {
+  const s = getScene(); el.inlineList.innerHTML = ''; const arr = s.sceneData.inlineChoices;
+  arr.forEach((x, i) => {
+    const div = document.createElement('div'); div.className = 'item' + (i===state.inlineIdx?' active':'');
+    div.innerHTML = `<div>${x.inlineId||'(빈 inlineId)'}</div><div class="tiny">${x.jumpLabel||'-'}</div>`;
+    div.onclick = () => { state.inlineIdx = i; renderInline(); };
+    el.inlineList.appendChild(div);
+  });
+  el.inlineForm.innerHTML = ''; const x = arr[state.inlineIdx]; if(!x) return;
+  const updateData = () => { 
+    updateDatalists(); renderOutputs(); 
+    const d = el.inlineList.children[state.inlineIdx];
+    if(d) d.innerHTML = `<div>${x.inlineId||'(빈 inlineId)'}</div><div class="tiny">${x.jumpLabel||'-'}</div>`;
+  };
+  const rebuildForm = () => { updateDatalists(); renderInline(); renderOutputs(); };
+  el.inlineForm.append(
+    field('inlineId (ID)', x.inlineId, v=>{x.inlineId=v; updateData()}),
+    field('jumpLabel', x.jumpLabel, v=>{x.jumpLabel=v; updateData()}, {list:'listLabels'}),
+    field('nextChapterId', x.nextChapterId, v=>{x.nextChapterId=v; updateData()}), field('nextSceneId', x.nextSceneId, v=>{x.nextSceneId=v; updateData()})
+  );
+  reqEditor(x.requirements, el.inlineForm, updateData, rebuildForm);
+  outcomeEditor(x.outcomes, el.inlineForm, updateData, rebuildForm);
+}
+
+function renderBranch() {
+  const s = getScene(); el.branchList.innerHTML = ''; const arr = s.sceneData.branches;
+  arr.forEach((x, i) => {
+    const div = document.createElement('div'); div.className = 'item' + (i===state.branchIdx?' active':'');
+    div.innerHTML = `<div>${x.branchId||'(빈 branchId)'}</div>`;
+    div.onclick = () => { state.branchIdx = i; renderBranch(); };
+    el.branchList.appendChild(div);
+  });
+  el.branchForm.innerHTML = ''; const x = arr[state.branchIdx]; if(!x) return;
+  const updateData = () => { 
+    updateDatalists(); renderOutputs(); 
+    const d = el.branchList.children[state.branchIdx];
+    if(d) d.innerHTML = `<div>${x.branchId||'(빈 branchId)'}</div>`;
+  };
+  const rebuildForm = () => { updateDatalists(); renderBranch(); renderOutputs(); };
+  el.branchForm.append(
+    field('branchId', x.branchId, v=>{x.branchId=v; updateData()}), field('branchText', x.branchText, v=>{x.branchText=v; updateData()}),
+    field('nextChapterId', x.nextChapterId, v=>{x.nextChapterId=v; updateData()}), field('nextSceneId', x.nextSceneId, v=>{x.nextSceneId=v; updateData()})
+  );
+  reqEditor(x.requirements, el.branchForm, updateData, rebuildForm);
+  outcomeEditor(x.outcomes, el.branchForm, updateData, rebuildForm);
+}
+
+
+
+function blockToScript(b) {
+  if(b.type==='text') return b.text||'';
+  if(b.type==='tooltip') return `[tooltip:${b.word||''}] ${b.text||''}`;
+  if(b.type==='footnote') return `[footnote:${b.text||''}]`;
+  if(b.type==='inline') return `[inline:${b.inlineId||''}] ${b.text||b.inlineId||''}`;
+  if(b.type==='branch') return `[branch:${b.branchId||''}] ${b.text||b.branchId||''}`;
+  if(b.type==='illust') return `[illust:${b.key||''}]`;
+  if(b.type==='jump') return `[jump:${b.label||''}]`;
+  if(b.type==='label') return `#${b.label||''}`;
+  return '';
+}
+
+function renderOutputs() {
+  const s = getScene();
+  el.txtBox.textContent = s.blocks.map(blockToScript).join('\n');
+  const d = JSON.parse(JSON.stringify(s.sceneData));
+  ['choices','inlineChoices','branches','illusts','bgms','sfxs','effects'].forEach(k => {
+    if (!d[k] || d[k].length === 0) delete d[k];
+  });
+  el.jsonBox.textContent = JSON.stringify(d, null, 2);
+
+  const issues = [];
+  const labels = new Set(s.blocks.filter(b=>b.type==='label').map(b=>b.label));
+  s.blocks.forEach(b => { if(b.type==='jump' && !labels.has(b.label)) issues.push(`점프 라벨 누락: ${b.label}`); });
+  el.validBadge.textContent = issues.length ? `경고 ${issues.length}` : '정상';
+  el.validBadge.style.color = issues.length ? 'white' : '';
+  el.validBadge.style.backgroundColor = issues.length ? 'var(--er)' : '';
+
+  el.previewBox.innerHTML = s.blocks.map(b => {
+    let t = blockToScript(b).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if (b.type==='inline' || b.type==='branch') return `<span style="color:blue;text-decoration:underline;cursor:pointer">${t}</span>`;
+    if (b.type==='tooltip') return `<span style="color:#00e6e6;font-weight:bold">${t}</span>`;
+    if (b.type==='footnote') return `<span style="color:green;font-weight:bold">${t}</span>`;
+    if (b.type==='label' || b.type==='jump' || b.type==='illust') return `<span style="color:gray">${t}</span>`;
+    return t;
+  }).join('<br>');
+}
+
+function fullRender() {
+  el.projTitle.value = project.title;
+  updateDatalists();
+  renderScenes(); renderMeta(); renderBlocks(); renderBlockForm(); renderInline(); renderBranch();  renderOutputs();
+}
+
+// ---------------- Panel Tabs ----------------
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  if (t.dataset.view) {
+    document.querySelectorAll('[data-view]').forEach(x => x.classList.remove('active')); t.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(t.dataset.view).classList.add('active');
+  //} else if (t.dataset.asset) {
+    
+    state.assetMode = t.dataset.asset; 
+  } else if (t.dataset.rview) {
+    document.querySelectorAll('[data-rview]').forEach(x => x.classList.remove('active')); t.classList.add('active');
+    document.querySelectorAll('aside.panel .view').forEach(v => v.classList.remove('active')); 
+    document.getElementById(t.dataset.rview).classList.add('active');
+  }
+});
+
+// ---------------- Block Actions ----------------
+document.querySelectorAll('[data-add]').forEach(btn => {
+  btn.onclick = () => {
+    const s = getScene();
+    const b = { id: uid(), type: btn.dataset.add, text:'', inlineId:'', branchId:'', key:'', label:'' };
+    if (state.selectedBlockIds.length > 0) {
+      const lastId = state.selectedBlockIds[state.selectedBlockIds.length - 1];
+      const idx = s.blocks.findIndex(x => x.id === lastId);
+      if (idx !== -1) { s.blocks.splice(idx + 1, 0, b); state.lastBlockIdx = idx + 1; }
+      else { s.blocks.push(b); state.lastBlockIdx = s.blocks.length - 1; }
+    } else { s.blocks.push(b); state.lastBlockIdx = s.blocks.length - 1; }
+    state.selectedBlockIds = [b.id]; 
+    updateDatalists(); renderBlocks(); renderBlockForm(); renderOutputs();
+  };
+});
+
+document.getElementById('delBlockBtn').onclick = () => { 
+  const s = getScene(); 
+  s.blocks = s.blocks.filter(b => !state.selectedBlockIds.includes(b.id)); 
+  state.selectedBlockIds = []; state.lastBlockIdx = -1;
+  updateDatalists(); renderBlocks(); renderBlockForm(); renderOutputs(); 
+};
+
+// ---------------- Simulator (Play) ----------------
+let simAbort = new AbortController();
+document.getElementById('btnRunSim').onclick = async () => {
+  simAbort.abort();
+  simAbort = new AbortController();
+  const signal = simAbort.signal;
+  const box = document.getElementById('simBox');
+  box.innerHTML = '';
+  const blocks = getScene().blocks;
+  let i = 0;
+
+  const simNextBtn = document.getElementById('simNextBtn');
+
+  const waitClick = () => new Promise(resolve => {
+    const handler = () => {
+      simNextBtn.removeEventListener('click', handler);
+      box.removeEventListener('click', handler);
+      resolve();
+    };
+    simNextBtn.addEventListener('click', handler);
+    box.addEventListener('click', handler);
+  });
+
+  while(i < blocks.length && !signal.aborted) {
+    const b = blocks[i];
+    if (b.type === 'text') {
+       const div = document.createElement('div'); div.className = 'sim-line'; box.appendChild(div);
+       if (!(b.text||'').trim()) { i++; continue; }
+       for(let c of (b.text||'')) {
+         if(signal.aborted) return;
+         div.textContent += c;
+         box.scrollTop = box.scrollHeight;
+         await new Promise(r=>setTimeout(r, 15)); // typing speed
+       }
+       await waitClick();
+    } else if (b.type === 'tooltip') {
+       box.innerHTML += `<div class="sim-line tiny" style="color:#00ffff; margin-top:-8px">[툴팁 등록: ${b.word}] ${b.text}</div>`;
+    } else if (b.type === 'footnote') {
+    } else if (b.type === 'illust') {
+       box.innerHTML += `<div class="sim-line card muted" style="text-align:center; padding:1.5rem; background:#222; border:1px dashed #444">[일러스트 표시: ${b.key}]</div>`;
+    } else if (b.type === 'label') {
+       box.innerHTML += `<div class="sim-line badge" style="background:#333; color:#aaa">#${b.label}</div>`;
+    } else if (b.type === 'jump') {
+       box.innerHTML += `<div class="sim-line tiny muted">... [jump:${b.label}] ...</div>`;
+       const targetIdx = blocks.findIndex(x => x.type === 'label' && x.label === b.label);
+       if (targetIdx !== -1) { i = targetIdx; continue; }
+       else { box.innerHTML += `<div class="sim-line" style="color:red">점프 대상(#${b.label}) 없음!</div>`; break; }
+    } else if (b.type === 'inline' || b.type === 'branch') {
+       let choices = [];
+       while(i < blocks.length && (blocks[i].type === 'inline' || blocks[i].type === 'branch')) {
+          choices.push(blocks[i]); i++;
+       }
+       i--; // backstep
+
+       const choiceDiv = document.createElement('div'); choiceDiv.className = 'stack sim-line';
+       choiceDiv.style.background = '#1a1a1a'; choiceDiv.style.padding = '1rem'; choiceDiv.style.borderRadius = 'var(--r1)';
+       box.appendChild(choiceDiv);
+
+       const picked = await new Promise(resolve => {
+          choices.forEach(ch => {
+             const btn = document.createElement('button'); btn.className = 'btn'; 
+             btn.style.color = ch.type==='inline' ? '#0af' : '#fa0';
+             btn.style.textAlign = 'left'; btn.style.background = '#222'; btn.style.border = '1px solid #444';
+             btn.textContent = `▶ ${ch.text || ch.inlineId || ch.branchId}`;
+             btn.onclick = () => { choiceDiv.innerHTML=''; resolve(ch); };
+             choiceDiv.appendChild(btn);
+          });
+       });
+
+       if(signal.aborted) return;
+       box.innerHTML += `<div class="sim-line" style="color:#aaa">선택: ${picked.text || picked.inlineId || picked.branchId}</div>`;
+
+       let jTarget = null;
+       if(picked.type === 'inline') {
+          const cd = getScene().sceneData.inlineChoices.find(x=>x.inlineId === picked.inlineId);
+          if(cd && cd.jumpLabel) jTarget = cd.jumpLabel;
+       } else {
+          const cd = getScene().sceneData.branches.find(x=>x.branchId === picked.branchId);
+          box.innerHTML += `<div class="sim-line" style="color:#f55">-- 브랜치 이동 (Scene: ${cd?cd.nextSceneId:'?'}로 씬 전환) --</div>`;
+          break; // Stop simulation on scene change
+       }
+
+       if(jTarget) {
+          const targetIdx = blocks.findIndex(x => x.type === 'label' && x.label === jTarget);
+          if (targetIdx !== -1) { i = targetIdx; }
+          else { box.innerHTML += `<div class="sim-line" style="color:red">점프 대상(#${jTarget}) 없음!</div>`; }
+       }
+    }
+    i++;
+    box.scrollTop = box.scrollHeight;
+  }
+  if(!signal.aborted) box.innerHTML += `<div class="sim-line muted" style="text-align:center;margin-top:1rem">-- 씬 종료 --</div>`;
+  box.scrollTop = box.scrollHeight;
+};
+
+// ---------------- Flowchart (Mermaid) ----------------
+document.getElementById('btnRefreshFlow').onclick = async () => {
+  const box = document.getElementById('flowBox');
+  box.innerHTML = '<div class="muted">생성 중...</div>';
+
+  const blocks = getScene().blocks;
+  const safeId = (s) => 'n_' + (s||'').replace(/[^a-zA-Z0-9_]/g, '_');
+
+  let def = 'graph TD;\n';
+  let current = 'Start';
+  def += 'Start([시작])\n';
+  let hasLinks = false;
+
+  for(let b of blocks) {
+     if (b.type === 'label') {
+        const next = safeId(b.label);
+        def += `${current} --> ${next}\n`;
+        current = next;
+        def += `${current}([#${b.label}])\n`;
+        hasLinks = true;
+     } else if (b.type === 'jump') {
+        def += `${current} -.점프.-> ${safeId(b.label)}\n`;
+        current = `DeadEnd_${uid()}`; 
+        hasLinks = true;
+     } else if (b.type === 'inline' || b.type === 'branch') {
+        let jTarget = '';
+        let label = (b.text || b.inlineId || b.branchId || '선택').replace(/["\\(\\)\\[\\]\;]/g, '');
+        if (b.type==='inline') {
+           const c = getScene().sceneData.inlineChoices.find(x=>x.inlineId===b.inlineId);
+           jTarget = (c && c.jumpLabel) ? safeId(c.jumpLabel) : '';
+        } else {
+           const c = getScene().sceneData.branches.find(x=>x.branchId===b.branchId);
+           jTarget = (c && c.nextSceneId) ? safeId('Scene_'+c.nextSceneId) : '';
+        }
+
+        if (jTarget) {
+           def += `${current} -- "${label}" --> ${jTarget}\n`;
+           hasLinks = true;
+        }
+     }
+  }
+  if(!hasLinks) { box.innerHTML = '<div class="muted">연결된 라벨이나 점프가 없습니다.</div>'; return; }
+
+  try {
+     const { svg } = await mermaid.render('flowGraph_' + uid(), def);
+     box.innerHTML = svg;
+  } catch (err) {
+     box.innerHTML = `<div style="color:red">렌더링 오류. 라벨에 특수문자가 없는지 확인하세요.</div><pre class="tiny">${def}</pre>`;
+  }
+};
+
+
+// ---------------- Project Flowchart (Mermaid) ----------------
+document.getElementById('btnRefreshProjFlow').onclick = async () => {
+  const box = document.getElementById('projFlowBox');
+  box.innerHTML = '<div class="muted">전체 맵 생성 중...</div>';
+
+  const safeId = (s) => 's_' + (s||'').replace(/[^a-zA-Z0-9_가-힣]/g, '_');
+  let def = 'graph TD;\n';
+
+  // Register all scenes
+  project.scenes.forEach(s => {
+    const sId = safeId(s.sceneData.sceneId);
+    let title = s.name.replace(/["\\(\\)\\[\\]\;]/g, '');
+    def += `${sId}(["[${s.sceneData.sceneId}] ${title}"])\n`;
+
+    // Auto advance connection
+    if (s.sceneData.autoAdvance && s.sceneData.nextSceneId) {
+       def += `${sId} -.자동.-> ${safeId(s.sceneData.nextSceneId)}\n`;
+    }
+
+    // Branch connections
+    if (s.sceneData.branches && s.sceneData.branches.length > 0) {
+       s.sceneData.branches.forEach(b => {
+          if (b.nextSceneId) {
+             let bName = (b.branchText || b.branchId || '분기').replace(/["\\(\\)\\[\\]\;]/g, '');
+             def += `${sId} -- "${bName}" --> ${safeId(b.nextSceneId)}\n`;
+          }
+       });
+    }
+  });
+
+  try {
+     const { svg } = await mermaid.render('projGraph_' + uid(), def);
+     box.innerHTML = svg;
+  } catch (err) {
+     box.innerHTML = `<div style="color:red">전체 맵 렌더링 오류. 씬 이름 등에 특수문자가 없는지 확인하세요.</div><pre class="tiny">${def}</pre>`;
+  }
+};
+
+// ---------------- Other Globals ----------------
+document.getElementById('addInlineBtn').onclick = () => { getScene().sceneData.inlineChoices.push({inlineId:'', jumpLabel:'', requirements:newReq(), outcomes:[]}); state.inlineIdx = getScene().sceneData.inlineChoices.length-1; updateDatalists(); renderInline(); renderOutputs(); };
+document.getElementById('delInlineBtn').onclick = () => { getScene().sceneData.inlineChoices.splice(state.inlineIdx, 1); state.inlineIdx = 0; updateDatalists(); renderInline(); renderOutputs(); };
+document.getElementById('addBranchBtn').onclick = () => { getScene().sceneData.branches.push({branchId:'', requirements:newReq(), outcomes:[]}); state.branchIdx = getScene().sceneData.branches.length-1; updateDatalists(); renderBranch(); renderOutputs(); };
+document.getElementById('delBranchBtn').onclick = () => { getScene().sceneData.branches.splice(state.branchIdx, 1); state.branchIdx = 0; updateDatalists(); renderBranch(); renderOutputs(); };
+document.getElementById('addSceneBtn').onclick = () => { const s = newScene(); project.scenes.push(s); state.sceneId = s.id; fullRender(); };
+document.getElementById('delSceneBtn').onclick = () => {
+  if (project.scenes.length <= 1) { alert('프로젝트에는 최소 1개의 씬이 있어야 합니다.'); return; }
+  const s = getScene();
+  if (confirm(`현재 선택된 씬 ['${s.name}']을(를) 삭제하시겠습니까?`)) {
+    project.scenes = project.scenes.filter(x => x.id !== state.sceneId);
+    state.sceneId = project.scenes[0].id;
+    state.selectedBlockIds = project.scenes[0].blocks[0] ? [project.scenes[0].blocks[0].id] : [];
+    state.lastBlockIdx = state.selectedBlockIds.length ? 0 : -1;
+    fullRender();
+  }
+};
+
+document.getElementById('themeBtn').onclick = () => { const r = document.documentElement; r.setAttribute('data-theme', r.getAttribute('data-theme')==='dark'?'light':'dark'); };
+el.projTitle.oninput = e => project.title = e.target.value;
+
+document.getElementById('pathInput').onchange = e => { const f = (e.target.files && e.target.files[0]); if(f && pathCallback) pathCallback(normalizePath(f.name)); pathCallback = null; };
+
+const download = async (name, text) => {
+  try {
+    if (window.showSaveFilePicker) {
+      const ext = name.split('.').pop();
+      const options = {
+        suggestedName: name,
+        types: [{
+          description: ext.toUpperCase() + ' File',
+          accept: { 'text/plain': ['.' + ext] },
+        }],
+      };
+      const handle = await window.showSaveFilePicker(options);
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text]));
+      a.download = name;
+      a.click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') console.error(err);
+  }
+};
+
+document.getElementById('exportSceneBtn').onclick = () => download(getScene().sceneData.sceneId+'.json', el.jsonBox.textContent);
+document.getElementById('exportTxtBtn').onclick = () => download(getScene().sceneData.sceneId+'.txt', el.txtBox.textContent);
+
+document.getElementById('newProjBtn').onclick = () => {
+  if(confirm("현재 진행 중인 작업이 모두 초기화됩니다. 새 프로젝트를 시작하시겠습니까?")) {
+    project = { title: "New Project", scenes: [ { id: uid(), name: "Scene_01", sceneData: {}, blocks: [] } ] };
+    state.sceneId = project.scenes[0].id;
+    state.selectedBlockIds = [];
+    state.lastBlockIdx = -1;
+    fullRender();
+  }
+};
+document.getElementById('loadJsonBtn').onclick = () => document.getElementById('jsonInput').click();
+document.getElementById('jsonInput').onchange = async e => {
+  const files = Array.from(e.target.files);
+  if(!files.length) return;
+
+  const fileGroups = {};
+  files.forEach(f => {
+     const name = f.name.replace(/\\.(json|txt|bytes)$/i, '');
+     const ext = f.name.split('.').pop().toLowerCase();
+     if (!fileGroups[name]) fileGroups[name] = {};
+     if (ext === 'json') fileGroups[name].json = f;
+     else fileGroups[name].txt = f;
+  });
+
+  let addedCount = 0;
+
+  for (const [baseName, group] of Object.entries(fileGroups)) {
+     let newS = newScene();
+     newS.name = baseName;
+     newS.sceneData.sceneId = baseName;
+     let isProjectFile = false;
+
+     // Load JSON if exists
+     if (group.json) {
+        const text = await new Promise(r => { const rd = new FileReader(); rd.onload = ev => r(ev.target.result); rd.readAsText(group.json); });
+        try { 
+           const d = JSON.parse(text);
+           if(d.scenes) {
+              isProjectFile = true;
+              if(confirm(`[${baseName}]은(는) 전체 프로젝트 파일입니다. 기존 씬 목록을 지우고 덮어쓰시겠습니까?\n(취소 시 기존 씬 뒤에 병합됩니다)`)) {
+                 project = d; 
+              } else {
+                 d.scenes.forEach(xs => { xs.id = uid(); project.scenes.push(xs); });
+              }
+              addedCount++;
+           } else {
+              newS.sceneData = d;
+              if(d.sceneId) newS.name = d.sceneId;
+           }
+        } catch(e) { console.error("JSON 파싱 실패", baseName); }
+     }
+
+     if(isProjectFile) continue;
+
+     // Load TXT if exists
+     if (group.txt) {
+        const text = await new Promise(r => { const rd = new FileReader(); rd.onload = ev => r(ev.target.result); rd.readAsText(group.txt); });
+        newS.blocks = [];
+
+        let lastTextBlock = null;
+        text.replace(/\r/g,'').split('\n').forEach(raw => {
+          let line = raw.trim();
+
+          if(line.startsWith('#')) { newS.blocks.push({id:uid(), type:'label', label:line.slice(1).trim()}); lastTextBlock = null; return; }
+          if(line.startsWith('[tooltip:')) { let i = line.indexOf(']'); newS.blocks.push({id:uid(), type:'tooltip', word:line.slice(9,i), text:line.slice(i+1).trim()}); lastTextBlock = null; return; }
+          if(line.startsWith('[footnote:')) { newS.blocks.push({id:uid(), type:'footnote', text:line.slice(10,-1)}); lastTextBlock = null; return; }
+          if(line.startsWith('[illust:')) { newS.blocks.push({id:uid(), type:'illust', key:line.slice(8,-1)}); lastTextBlock = null; return; }
+          if(line.startsWith('[jump:')) { newS.blocks.push({id:uid(), type:'jump', label:line.slice(6,-1)}); lastTextBlock = null; return; }
+          if(line.startsWith('[inline:')) { let i = line.indexOf(']'); newS.blocks.push({id:uid(), type:'inline', inlineId:line.slice(8,i), text:line.slice(i+1).trim()}); lastTextBlock = null; return; }
+          if(line.startsWith('[branch:')) { let i = line.indexOf(']'); newS.blocks.push({id:uid(), type:'branch', branchId:line.slice(8,i), text:line.slice(i+1).trim()}); lastTextBlock = null; return; }
+
+          if (!line) {
+            if (lastTextBlock) lastTextBlock.text += '\n';
+            return;
+          }
+
+          if (lastTextBlock) {
+             lastTextBlock.text += (lastTextBlock.text.endsWith('\n') ? '' : '\n') + raw;
+          } else {
+             lastTextBlock = {id:uid(), type:'text', text:raw};
+             newS.blocks.push(lastTextBlock);
+          }
+        });
+        // Clean up trailing newlines
+        newS.blocks.forEach(b => { if(b.type==='text') b.text = b.text.trim(); });
+
+     }
+
+     if (group.json || group.txt) {
+        project.scenes.push(newS);
+        addedCount++;
+     }
+  }
+
+  if (addedCount > 0) {
+     state.sceneId = project.scenes[project.scenes.length-1].id;
+     state.selectedBlockIds = [];
+     state.lastBlockIdx = -1;
+  }
+  fullRender();
+  e.target.value = '';
+};
+
+document.getElementById('importTxtBtn').onclick = () => document.getElementById('txtInput').click();
+document.getElementById('txtInput').onchange = e => {
+  const f = (e.target.files && e.target.files[0]); if(!f) return; const r = new FileReader();
+  r.onload = ev => {
+    const s = getScene(); s.blocks = [];
+
+        let lastTextBlock = null;
+        ev.target.result.replace(/\r/g,'').split('\n').forEach(raw => {
+          let line = raw.trim();
+
+          if(line.startsWith('#')) { s.blocks.push({id:uid(), type:'label', label:line.slice(1).trim()}); lastTextBlock = null; return; }
+          if(line.startsWith('[tooltip:')) { let i = line.indexOf(']'); s.blocks.push({id:uid(), type:'tooltip', word:line.slice(9,i), text:line.slice(i+1).trim()}); lastTextBlock = null; return; }
+          if(line.startsWith('[footnote:')) { s.blocks.push({id:uid(), type:'footnote', text:line.slice(10,-1)}); lastTextBlock = null; return; }
+          if(line.startsWith('[illust:')) { s.blocks.push({id:uid(), type:'illust', key:line.slice(8,-1)}); lastTextBlock = null; return; }
+          if(line.startsWith('[jump:')) { s.blocks.push({id:uid(), type:'jump', label:line.slice(6,-1)}); lastTextBlock = null; return; }
+          if(line.startsWith('[inline:')) { let i = line.indexOf(']'); s.blocks.push({id:uid(), type:'inline', inlineId:line.slice(8,i), text:line.slice(i+1).trim()}); lastTextBlock = null; return; }
+          if(line.startsWith('[branch:')) { let i = line.indexOf(']'); s.blocks.push({id:uid(), type:'branch', branchId:line.slice(8,i), text:line.slice(i+1).trim()}); lastTextBlock = null; return; }
+
+          if (!line) {
+            if (lastTextBlock) lastTextBlock.text += '\n';
+            return;
+          }
+
+          if (lastTextBlock) {
+             lastTextBlock.text += (lastTextBlock.text.endsWith('\n') ? '' : '\n') + raw;
+          } else {
+             lastTextBlock = {id:uid(), type:'text', text:raw};
+             s.blocks.push(lastTextBlock);
+          }
+        });
+        // Clean up trailing newlines
+        s.blocks.forEach(b => { if(b.type==='text') b.text = b.text.trim(); });
+
+    state.selectedBlockIds = s.blocks[0] ? [s.blocks[0].id] : []; 
+    state.lastBlockIdx = s.blocks.length ? 0 : -1;
+    updateDatalists(); renderBlocks(); renderBlockForm(); renderOutputs();
+  }; r.readAsText(f);
+};
+
+fullRender();
+
+// ---------------- Splitter / Resizer ----------------
+let isDraggingLeft = false, isDraggingRight = false;
+const appGrid = document.getElementById('appGrid');
+const resizerL = document.getElementById('resizerL');
+const resizerR = document.getElementById('resizerR');
+
+resizerL.onmousedown = () => { isDraggingLeft = true; resizerL.classList.add('active'); document.body.style.cursor = 'col-resize'; };
+resizerR.onmousedown = () => { isDraggingRight = true; resizerR.classList.add('active'); document.body.style.cursor = 'col-resize'; };
+
+window.addEventListener('mousemove', (e) => {
+  if (isDraggingLeft) {
+    let w = e.clientX;
+    if (w < 200) w = 200; if (w > 600) w = 600;
+    appGrid.style.setProperty('--left-w', w + 'px');
+  } else if (isDraggingRight) {
+    let w = window.innerWidth - e.clientX;
+    if (w < 200) w = 200; if (w > 800) w = 800;
+    appGrid.style.setProperty('--right-w', w + 'px');
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (isDraggingLeft || isDraggingRight) {
+    isDraggingLeft = false; isDraggingRight = false;
+    resizerL.classList.remove('active'); resizerR.classList.remove('active');
+    document.body.style.cursor = '';
+  }
+});
+
+</script>
+</body>
+</html>
