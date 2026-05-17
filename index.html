@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Narrative Tag Editor v1.0 White Editor</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     :root, [data-theme="light"] {
       --bg: #f5f5f7; --sf: #f5f5f7; --sf2: #ffffff; --sf3: #e5e5ea; --bd: #d1d1d6;
@@ -88,689 +87,1026 @@
     .panel > .view.active#blocks { display: flex; flex-direction: column; }
     .panel > .view.active#meta { overflow-y: auto; }
 
-
-
-
-/* ===========================================
-   DESKTOP REFINEMENT SYSTEM
-   =========================================== */
-:root,
-[data-theme="light"] {
-  --ui-radius: 10px;
-  --ui-radius-sm: 8px;
-  --ui-border: 1px solid rgba(60,60,67,0.16);
-  --ui-border-strong: 1px solid rgba(60,60,67,0.22);
-  --ui-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.06);
-  --ui-shadow-soft: 0 1px 2px rgba(0,0,0,0.03);
-  --ui-btn-h: 32px;
-  --ui-gap-1: 4px;
-  --ui-gap-2: 8px;
-  --ui-gap-3: 12px;
-  --ui-gap-4: 16px;
-}
-
+/* ------------------------------------------- */
+/* PERFECT IPAD AIR 3-COLUMN LAYOUT            */
+/* ------------------------------------------- */
 html, body {
+  margin: 0; padding: 0;
+  height: 100dvh;
+  overflow: hidden; /* Prevent page-level scrolling */
   background: var(--bg);
 }
 
-body {
-  font-size: 13px;
+header {
+  height: 60px; /* Fixed height for header */
+  box-sizing: border-box;
 }
 
-.app > aside,
-.app > main {
-  padding: 10px;
-  gap: 10px;
+.app {
+  display: grid !important;
+  /* Columns: Left(240px) Center(Flexible, wide) Right(320px) */
+  grid-template-columns: 240px 1fr 320px !important;
+  grid-template-rows: 1fr !important;
+  height: calc(100dvh - 60px) !important;
+  min-height: 0 !important;
+  gap: 0 !important;
+}
+
+/* Target the Left Panel (1st child) */
+.app > aside:nth-child(1) {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  border-right: 1px solid var(--bd);
+}
+
+/* Hide Resizers (2nd and 4th children) */
+.app > div.resizer {
+  display: none !important;
+}
+
+/* Target the Center Panel (3rd child) */
+.app > main:nth-child(3) {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
   background: var(--bg);
 }
 
-.panel {
-  padding: 0;
-  gap: 10px;
-  background: transparent;
+/* Make sure the active view in the center panel takes full height */
+.app > main:nth-child(3) > section.view.active {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
 }
 
-.card {
-  background: #ffffff;
-  border: var(--ui-border);
-  border-radius: var(--ui-radius);
-  box-shadow: var(--ui-shadow-soft);
-  padding: 0;
-  overflow: hidden;
-}
-
-.row,
-.stack,
-.toolbar {
-  gap: var(--ui-gap-2);
-}
-
-.title {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.muted,
-.tiny {
-  color: var(--mt);
-}
-
-.tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(120,120,128,0.12);
-  border: var(--ui-border);
-  border-radius: 12px;
-  padding: 4px;
-  margin: 0 0 8px 0;
-  width: fit-content;
-  max-width: 100%;
-  box-shadow: none;
-}
-
-.tab {
-  height: var(--ui-btn-h);
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--mt);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
-}
-
-.tab:hover {
-  background: rgba(255,255,255,0.72);
-  color: var(--tx);
-}
-
-.tab.active {
-  background: #fff;
-  color: var(--tx);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-}
-
-.btn,
-button.btn,
-input[type="button"],
-input[type="submit"] {
-  height: var(--ui-btn-h);
-  min-height: var(--ui-btn-h);
-  padding: 0 12px;
-  border-radius: 8px;
-  border: var(--ui-border-strong);
-  background: #fff;
-  color: var(--tx);
-  box-shadow: none;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.04s ease;
-}
-
-.btn:hover {
-  background: rgba(0,122,255,0.06);
-  border-color: rgba(0,122,255,0.28);
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn-primary {
-  background: var(--pr);
-  color: #fff;
-  border-color: var(--pr);
-}
-
-.btn-primary:hover {
-  background: var(--prh);
-  border-color: var(--prh);
-}
-
-.btn-danger {
-  background: #fff;
-  color: #c62828;
-  border-color: rgba(198,40,40,0.22);
-}
-
-.btn-danger:hover {
-  background: rgba(198,40,40,0.06);
-  border-color: rgba(198,40,40,0.35);
-}
-
-input,
-textarea,
-select {
-  border-radius: 8px;
-  border: var(--ui-border-strong);
-  background: #fff;
-  box-shadow: none;
-  font-size: 13px;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: rgba(0,122,255,0.45);
-  box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
-}
-
-section.view.active {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  gap: 10px;
-}
-
-#metaForm {
-  padding: 16px;
-  gap: 12px;
-}
-
-#blocks > div:first-child {
-  margin: 0;
-}
-
-#blocks .toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 10px;
-  background: #fff;
-  border: var(--ui-border);
-  border-radius: var(--ui-radius);
-  box-shadow: var(--ui-shadow-soft);
-}
-
-#blocks .toolbar .btn {
-  flex: 0 0 auto;
-}
-
-#blockSplitContainer {
-  display: flex;
-  gap: 10px;
-  min-height: 0;
-  flex: 1;
-}
-
-#blockListWrapper,
-#blockFormWrapper {
-  background: #fff;
-  border: var(--ui-border);
-  border-radius: var(--ui-radius);
-  box-shadow: var(--ui-shadow-soft);
-  overflow: hidden;
-}
-
-#blockListWrapper > .row,
-#blockFormWrapper > div:first-child {
-  min-height: 42px;
-  padding: 10px 12px;
-  margin: 0;
-  background: rgba(120,120,128,0.08);
-  border-bottom: var(--ui-border);
-  display: flex;
-  align-items: center;
-}
-
-#blockListWrapper .list {
-  padding: 8px;
-}
-
-#blockList .item {
-  margin: 0 0 6px 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid transparent;
-  box-shadow: none;
-}
-
-#blockList .item:hover {
-  background: rgba(0,122,255,0.04);
-  border-color: rgba(0,122,255,0.16);
-  transform: none;
-}
-
-#blockList .item.active {
-  background: rgba(0,122,255,0.10);
-  border-color: rgba(0,122,255,0.24);
-  color: var(--tx);
-}
-
+/* Make sure textareas in blocks view fill the space */
 #blockForm {
-  padding: 14px;
-  gap: 10px;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
 }
 
-#blockForm .field,
-#metaForm .field,
-#inlineForm .field,
-#branchForm .field {
-  margin: 0;
-}
-
-#blockForm .stack.hide-label {
-  gap: 0;
+#blockForm .field:has(textarea) {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 #blockForm textarea {
-  min-height: 96px;
+  flex: 1 1 auto !important;
+  resize: none !important; /* Disable manual resize since it flexes */
+  box-sizing: border-box !important;
 }
 
-.badge {
-  border-radius: 999px;
-  background: rgba(120,120,128,0.12);
-  color: var(--tx);
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 700;
+/* Target the Right Panel (5th child) */
+.app > aside:nth-child(5) {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  border-left: 1px solid var(--bd);
+  background: var(--sf1);
 }
 
-#previewBox,
-#simBox,
-#flowBox,
-#projFlowBox,
-.code {
-  border: var(--ui-border);
-  border-radius: 10px;
-  box-shadow: none;
+/* Mermaid and preview scaling */
+#mermaid {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 300px !important;
 }
 
-#resizerL,
-#resizerR {
-  width: 6px;
-  margin: 0;
-  background: transparent;
+/* Optimize form density for iPad */
+.card.grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+.tabs { padding: 4px; overflow-x: auto; white-space: nowrap; flex-shrink: 0; }
+
+
+
+/* --- FINAL IPAD POLISHED LAYOUT --- */
+
+/* 1단 (좌측 패널) 면적 유지 및 디자인 정비 */
+.app {
+  grid-template-columns: 180px 1fr 320px !important;
 }
 
-#resizerL:hover,
-#resizerR:hover,
-#resizerL.active,
-#resizerR.active {
-  background: rgba(0,122,255,0.18);
+/* 좌측 패널(1단) 미관 정비 */
+.app > aside:nth-child(1) {
+  background: var(--bg) !important;
+}
+.app > aside:nth-child(1) .tabs {
+  padding: 8px 8px 0 8px !important;
+  gap: 4px !important;
+  flex-wrap: wrap !important;
+  border-bottom: none !important;
+}
+.app > aside:nth-child(1) .tab {
+  font-size: 12px !important;
+  padding: 6px !important;
+  border-radius: 6px 6px 0 0 !important;
+  flex: 1 1 auto !important;
+  text-align: center !important;
+}
+.app > aside:nth-child(1) > section.view {
+  padding: 12px 8px !important;
+}
+#metaForm.grid {
+  gap: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+#metaForm .field {
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 !important;
+}
+#metaForm label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #888 !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+#metaForm input, #metaForm select, #metaForm button {
+  font-size: 13px !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--bd) !important;
+  background: var(--sf1) !important;
+}
+#metaForm input:focus, #metaForm select:focus {
+  border-color: var(--pr) !important;
+  background: var(--bg) !important;
+}
+
+/* 2단 (중앙 패널) 블록 vs 편집기 비율 (1:3) 및 구분선 제거 */
+#blocks .split {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#blockList {
+  flex: 1 !important; /* 1 비율 */
+  min-width: 120px !important;
+  max-width: 25% !important;
+  border-right: none !important; /* 기능 없는 바 완전 제거 */
+  box-shadow: inset -1px 0 0 0 rgba(255,255,255,0.05) !important; /* 아주 미세한 경계만 남김 */
+  padding: 8px !important;
+}
+
+#blockForm {
+  flex: 3 !important; /* 3 비율 */
+  width: 75% !important;
+  padding: 16px 20px !important; /* 편집기 내부 여유 공간 */
+  background: var(--bg) !important;
+}
+
+/* 태그 메뉴(툴바)와 텍스트 입력창 간격 확보 */
+#blockForm .toolbar, #blockForm .row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 20px !important; /* 메뉴와 입력창 사이 넓게 띄움 */
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--bd) !important;
+}
+
+#blockForm .toolbar button, #blockForm .row button {
+  flex: 1 1 auto !important;
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  border-radius: 6px !important;
+  background: var(--sf1) !important;
+  border: 1px solid var(--bd) !important;
+  color: var(--tx1) !important;
+}
+#blockForm .toolbar button:hover, #blockForm .row button:hover {
+  background: var(--sf2) !important;
+}
+
+/* 3단 (우측 패널) 여백 낭비 제거하고 넓게 쓰기 */
+.app > aside:nth-child(5) {
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--bg) !important;
+  border-left: 1px solid var(--bd) !important;
+}
+.app > aside:nth-child(5) > .tabs {
+  padding: 8px 4px 0 4px !important;
+  gap: 2px !important;
+}
+.app > aside:nth-child(5) > section.view {
+  padding: 4px !important; /* 불필요한 여백 최소화 */
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+#r-preview {
+  padding: 0 !important; /* 미리보기는 여백 아예 없앰 */
+}
+#r-preview .card {
+  margin: 4px !important; /* 카드 형태의 여백도 최소화 */
+  width: calc(100% - 8px) !important;
+  box-sizing: border-box !important;
+}
+
+/* ------------------------------------------------------------- */
+/* BINGO: Fix Inline Style Override for Block Split              */
+/* ------------------------------------------------------------- */
+#blockListWrapper {
+  width: 25% !important;
+  min-width: 140px !important;
+  max-width: 200px !important;
+  flex: none !important;
+}
+
+#blockFormWrapper {
+  width: 75% !important;
+  flex: 1 1 auto !important;
 }
 
 #blockResizer {
-  width: 6px;
-  min-width: 6px;
-  cursor: col-resize;
-  align-self: stretch;
-  position: relative;
-  background: transparent;
-  border-radius: 999px;
-}
-
-#blockResizer > div {
-  left: 2px !important;
-  width: 2px !important;
-  border-radius: 999px;
-  background: rgba(120,120,128,0.28) !important;
-}
-
-#blockResizer:hover > div,
-#blockResizer.active > div {
-  background: rgba(0,122,255,0.45) !important;
-}
-
-/* remove awkward decorative empty surfaces */
-#blocks > div:first-child:empty,
-#blockFormWrapper > div:first-child:empty {
-  display: none;
-}
-
-/* normalize scene control area */
-#sceneList {
-  padding: 8px;
-}
-
-#sceneList .item {
-  margin: 0 0 6px 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  box-shadow: none;
-}
-
-/* right panel cards */
-#r-preview .card,
-#r-sim .card,
-#r-flow .card,
-#r-proj-flow .card,
-#r-out .card {
-  border-radius: var(--ui-radius);
+  display: none !important; /* Remove the invisible resizer bar between them */
 }
 
 
-/* ===========================================
-   DESKTOP PROFESSIONAL (SHARP, COMPACT)
-   =========================================== */
-:root,
-[data-theme="light"] {
-  --r1: 4px !important;
-  --r2: 4px !important;
-  --r3: 4px !important;
-  --ui-radius: 4px !important;
-  --ui-radius-sm: 2px !important;
-  --ui-border: 1px solid var(--bd) !important;
-  --ui-border-strong: 1px solid var(--bd) !important;
-  --ui-shadow: none !important;
-  --ui-shadow-soft: none !important;
-  --ui-btn-h: 28px !important;
-}
-
-body { font-size: 13px !important; }
-
-.app > aside, .app > main { padding: 12px !important; gap: 8px !important; }
-
-.card {
-  background: var(--sf2) !important;
-  border: var(--ui-border) !important;
-  border-radius: var(--ui-radius) !important;
-  box-shadow: none !important;
-}
-
-/* 타이트한 간격 */
-.row, .stack, .toolbar { gap: 6px !important; }
-
-.tabs {
-  display: flex !important; align-items: center !important; gap: 2px !important;
-  border-bottom: 1px solid var(--bd) !important; padding: 0 0 6px 0 !important;
-  margin: 0 !important; width: 100% !important; border-radius: 0 !important; background: transparent !important;
-}
-
-.tab {
-  height: 26px !important; padding: 0 16px !important; border: 0 !important; border-radius: var(--ui-radius) !important;
-  background: transparent !important; color: var(--mt) !important; font-size: 13px !important; font-weight: 600 !important;
-}
-.tab.active { background: var(--sf3) !important; color: var(--tx) !important; box-shadow: none !important; }
-
-/* 버튼 각지게 & 줄바꿈 방지 */
-.btn {
-  height: var(--ui-btn-h) !important; min-height: var(--ui-btn-h) !important; padding: 0 10px !important;
-  border-radius: var(--ui-radius) !important; border: var(--ui-border-strong) !important;
-  background: var(--sf2) !important; color: var(--tx) !important; font-size: 12px !important; font-weight: 500 !important;
-  display: inline-flex !important; align-items: center !important; justify-content: center !important;
-  white-space: nowrap !important; /* 버튼 글자 깨짐 완전 방지 */
-}
-
-input, textarea, select {
-  border-radius: var(--ui-radius) !important; border: var(--ui-border-strong) !important;
-  font-size: 13px !important; padding: 6px 8px !important;
-}
-
-/* 2단 (텍스트 블록 뷰) 간격 끌어올리기 */
-section.view.active { display: flex !important; flex-direction: column !important; min-height: 0 !important; gap: 8px !important; padding-top: 0 !important; }
-
-#blocks > .row { padding: 0 !important; margin: 0 !important; background: transparent !important; border: none !important; }
-
-#blocks .toolbar { 
-  display: flex !important; flex-wrap: nowrap !important; /* 툴바 강제 한 줄 */
-  align-items: center !important; gap: 4px !important; padding: 0 !important; background: transparent !important; 
-  border: none !important; box-shadow: none !important; margin-bottom: 4px !important; overflow-x: auto !important;
-}
-#blocks .toolbar::-webkit-scrollbar { display: none !important; }
-#blocks .toolbar .btn { flex: 0 0 auto !important; }
-
-#blockSplitContainer { display: flex !important; gap: 8px !important; flex: 1 !important; min-height: 0 !important; }
-#blockListWrapper, #blockFormWrapper { border-radius: var(--ui-radius) !important; border: var(--ui-border) !important; box-shadow: none !important; padding:0 !important; margin:0 !important; }
-#blockListWrapper > .row, #blockFormWrapper > div:first-child {
-  min-height: 32px !important; padding: 6px 10px !important; margin: 0 !important;
-  background: var(--sf3) !important; border-bottom: var(--ui-border) !important; font-size: 13px !important; font-weight: 600 !important; border-radius:0 !important;
-}
-#blockForm { padding: 12px !important; gap: 8px !important; background: transparent !important; }
-#blockList .item { padding: 6px 10px !important; margin: 0 0 4px 0 !important; border-radius: var(--ui-radius) !important; border: 1px solid transparent !important; }
-
-/* 3단 하단 패딩/마진 (글자와 버튼 딱 붙는 것 수정) */
-#r-preview .card, #r-sim .card, #r-flow .card, #r-proj-flow .card {
-  display: flex !important; flex-direction: column !important; padding: 16px !important; gap: 12px !important; border: none !important; background: transparent !important;
-}
-#r-preview .card > .row, #r-sim .card > .row, #r-flow .card > .row, #r-proj-flow .card > .row {
-  margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; min-height: auto !important;
-}
-#previewBox, #simBox, #flowBox, #projFlowBox {
-  padding: 16px !important; border: var(--ui-border) !important; border-radius: var(--ui-radius) !important; margin: 0 !important;
-}
-#simBox { margin-bottom: 8px !important; } /* 다음 진행 버튼 위 여백 확보 */
-#simNextBtn { margin-top: 10px !important; }
-
-
-/* ===========================================
-   TAB ALIGNMENT + HOVER FIX
-   =========================================== */
-.tabs {
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
+/* ------------------------------------------------------------- */
+/* Editor Full Width Fix & Cleanup                               */
+/* ------------------------------------------------------------- */
+#blockFormWrapper.card {
+  margin: 0 !important;
   padding: 0 !important;
-  min-height: 30px !important;
   border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  flex: 1 1 auto !important; /* It's flex item in .split, so it will take the rest of space */
+}
+
+#blockForm {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 16px 24px !important; /* Proper internal spacing for text */
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+}
+
+#blockListWrapper.card {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+
+/* ------------------------------------------------------------- */
+/* UI Fixing & Extreme Space Economy                             */
+/* ------------------------------------------------------------- */
+
+/* 1. 블록 목록 UI 복구 및 여백 경제화 */
+#blockListWrapper {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#blockListWrapper > .row {
+  display: flex !important;
+  flex-wrap: nowrap !important; /* 가로 고정 */
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 8px !important;
+  background: var(--sf1) !important;
+  border-bottom: 1px solid var(--bd) !important;
+  margin: 0 !important;
+}
+
+#blockListWrapper > .row span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--tx1) !important;
+}
+
+#delBlockBtn {
+  flex: none !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+#blockList {
+  padding: 4px !important; /* 목록 내부 낭비 여백 축소 */
+}
+
+/* 2. 편집기 내부 패딩 극단적 축소 */
+#blockForm {
+  padding: 8px 12px !important; /* 기존 16px 24px -> 8px 12px 로 대폭 축소 */
+}
+
+/* 3. 편집기 상단 툴바(태그메뉴) 높이 및 간격 압축 */
+#blockForm .toolbar, #blockForm .row {
+  margin-bottom: 8px !important; /* 기존 20px -> 8px */
+  padding-bottom: 8px !important; /* 기존 12px -> 8px */
+  gap: 4px !important;
+}
+#blockForm .toolbar button, #blockForm .row button {
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+}
+
+/* 4. 전체 단(Column) 간 경계 여백 제거 */
+.app {
+  gap: 0 !important;
+}
+.app > aside, .app > main {
+  border-width: 1px !important; /* 얇은 테두리만 남기고 여백 없음 */
+}
+
+/* 텍스트 입력창 높이 극대화 (불필요한 폼 마진 제거) */
+#blockForm .field {
+  margin-bottom: 8px !important;
+}
+
+
+/* ------------------------------------------------------------- */
+/* Toolbar & Editor Final Clean-up                               */
+/* ------------------------------------------------------------- */
+
+/* 1. 상단 타이틀 "텍스트 블록"과 태그 버튼(툴바) 분리 정리 */
+#blocks > .row {
+  display: flex !important;
+  flex-direction: column !important; /* 위: 텍스트블록 제목, 아래: 버튼들 */
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid var(--bd) !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important; /* 여기는 줄바꿈 금지 */
+}
+
+/* "텍스트 블록" 텍스트 */
+#blocks > .row > div:first-child {
+  font-size: 15px !important;
+  font-weight: bold !important;
+  color: var(--tx1) !important;
+  margin-bottom: 4px !important;
+}
+
+/* 태그 버튼들 그룹 (툴바) */
+#blocks > .row > .toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important; /* 버튼 그룹 안에서만 줄바꿈 허용 */
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+/* 버튼 크기 및 색상 */
+#blocks > .row > .toolbar > button {
+  flex: 1 1 auto !important;
+  min-width: 45px !important;
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+  background: var(--sf1) !important;
+  border: 1px solid var(--bd) !important;
+  border-radius: 4px !important;
+}
+
+/* 2. 편집기 본문(textarea) 회색/흰색 깨짐 및 여백 정리 */
+#blockForm .field {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+
+#blockForm textarea {
+  background: var(--bg) !important; /* 어두운 메인 배경색으로 통일 */
+  border: 1px solid var(--bd) !important;
+  color: var(--tx1) !important;
+  padding: 12px !important;
+  border-radius: 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important; /* 텍스트 창 느낌 부여 */
+}
+
+#blockFormWrapper {
+  background: var(--sf1) !important; /* 폼 바깥 패널 색상 */
+}
+
+/* "편집기"라는 작은 타이틀도 깔끔하게 */
+#blockFormWrapper > div:first-child {
+  font-size: 13px !important;
+  color: var(--tx2) !important;
+  margin-bottom: 8px !important;
+  padding: 8px 12px 0 12px !important;
+}
+
+
+/* ------------------------------------------------------------- */
+/* Editor White Background & Extreme Space Economy               */
+/* ------------------------------------------------------------- */
+
+/* 1. 불필요한 "편집기" 타이틀 텍스트 완전 숨김 (공간 낭비 제거) */
+#blockFormWrapper > div:first-child {
+  display: none !important;
+}
+
+/* 2. 편집기 내부(blockForm) 갭과 패딩 극단적 축소 */
+#blockForm {
+  gap: 4px !important; /* 기존 인라인 10px 무시 */
+  padding: 4px 8px !important;
+}
+
+/* 3. 라벨("본문")과 입력창 사이의 간격 최소화 */
+#blockForm .field {
+  margin-bottom: 4px !important;
+}
+
+/* 4. 편집기 본문 텍스트 에디터 흰색 배경 처리 */
+#blockForm textarea, #blockForm input[type="text"] {
+  background: #ffffff !important;
+  color: #000000 !important; /* 흰 배경에 검은 글씨 */
+  border: 1px solid #a0a0a0 !important;
+  padding: 8px 10px !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+  caret-color: #000000 !important; /* 커서 색상도 검정으로 */
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* 포커스 시 테두리 강조 */
+#blockForm textarea:focus, #blockForm input[type="text"]:focus {
+  border-color: #2563eb !important;
+  outline: none !important;
+}
+
+
+/* === base: ipad-white top lift === */
+#blocks > .row { margin-top: 0 !important; padding-top: 0 !important; }
+#blockListWrapper, #blockFormWrapper { margin-top: 0 !important; }
+
+
+/* === targeted label/spacing fix === */
+#blocks > .row .btn {
+  color: #111 !important;
+}
+
+/* Hide the small gray "본문" label only inside the text block editor area */
+#blockForm .field > div {
+  display: none !important;
+}
+
+/* Make the editor area sit flush to the top bar */
+#blockForm .field {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+#blockForm textarea {
+  margin-top: 0 !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+
+
+/* === Hide the label specifically in the block form editor === */
+
+
+/* Remove spacing in the stack so the textarea touches the top */
+
+
+/* Remove blockForm padding so it flushes up */
+#blockForm { padding-top: 4px !important; gap: 6px !important; } /* other blocks normal */
+
+
+/* Bulletproof label hider for ONLY the main text block */
+#blockForm .stack.hide-label > span.tiny {
+  display: none !important;
+}
+#blockForm .stack.hide-label {
+  margin-top: 0 !important;
+  gap: 0 !important;
+}
+
+
+/* === 상단 툴바와 아래 편집기 사이의 가로 구분선 및 여백 제거 === */
+#blocks > .row {
+  border-bottom: none !important; /* 가로 구분선 제거 */
+  padding-bottom: 0 !important;   /* 하단 여백 제거 */
+}
+
+
+
+/* === 최상단 메뉴, 툴바 버튼, 입력창 사이의 간격 50% 압축 === */
+
+/* 최상단 메인 탭 아래쪽 패딩 줄이기 */
+.tabs {
+  padding-bottom: 2px !important;
+}
+
+/* 탭 아래 컨텐츠 영역(view) 상단 패딩 축소 */
+.app > main > section.view {
+  padding-top: 2px !important;
+}
+
+/* 버튼들을 감싸는 .row 자체의 상하 마진 완전 제거 */
+#blocks > .row {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* 버튼 그룹 내부의 간격(gap)도 조금 더 타이트하게 */
+#blocks > .row > .toolbar {
+  gap: 3px !important;
+}
+
+/* 입력창(blockFormWrapper) 위쪽 간격 추가 압축 */
+#blockSplitContainer, #blockListWrapper, #blockFormWrapper {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+#blockForm {
+  padding-top: 2px !important;
+}
+
+
+/* === 최상단 메인 탭과 블록 메뉴 사이의 여백 완벽 제거 === */
+
+/* 가운데 패널(main)의 탭 영역 아래 마진/패딩 제거 */
+main.panel > .tabs {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* 가운데 패널의 뷰 영역(section#blocks) 상단 마진/패딩 완전 제거 */
+main.panel > section#blocks {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* 버튼들을 감싸는 첫번째 row의 상단 여백 제거 */
+#blocks > .row:first-of-type {
+  margin-top: 0 !important;
+  padding-top: 2px !important; /* 최소한의 1~2px만 유지 */
+}
+
+/* 탭 자체의 높이도 살짝 줄임 (선택) */
+main.panel > .tabs button.tab {
+  margin-bottom: 0 !important;
+}
+
+
+/* === 근본적인 원인 해결: .panel의 gap과 padding 제거 === */
+main.panel {
+  padding-top: 4px !important;
+  padding-bottom: 0 !important;
+  gap: 0 !important; /* 16px이나 되던 여백의 주범 */
+}
+aside.panel {
+  gap: 0 !important;
+}
+
+
+/* === 최상단 탭과 두 번째 툴바 버튼 높이 압축 === */
+
+/* 1. 최상단 메인 탭 (씬 메타, 텍스트 블록 등) */
+main.panel > .tabs button.tab,
+aside.panel > .tabs button.tab {
+  padding: 4px 6px !important;  /* 상하 패딩 축소 */
+  font-size: 11px !important;   /* 폰트 살짝 축소 */
+  min-height: 24px !important;  /* 최소 높이 강제 축소 */
+  line-height: 1.2 !important;
+}
+
+/* 2. 두 번째 툴바 버튼 (본문, 툴팁 등) */
+#blocks > .row > .toolbar > button,
+#blocks > .row > .toolbar > .btn {
+  padding: 3px 6px !important;  /* 상하 패딩 극한 축소 */
+  font-size: 10px !important;   /* 폰트 더 작게 */
+  min-height: 22px !important;  /* 버튼 높이 압축 */
+  line-height: 1.2 !important;
+  border-radius: 4px !important;
+}
+
+/* 3. 오른쪽 TXT 불러오기 등 툴바 내 다른 버튼들도 일괄 적용 */
+.toolbar .btn {
+  padding: 3px 6px !important;
+  min-height: 22px !important;
+  font-size: 10px !important;
+}
+
+/* 탭 전체 래퍼의 위아래 패딩도 얇게 조정 */
+.tabs {
+  padding-top: 2px !important;
+}
+
+
+/* === 상하 여백 완벽 동일화 (최상단~두번째 == 두번째~입력영역) === */
+
+/* 1. 최상단 탭과 두번째 툴바 사이의 마지막 남은 2px 패딩 제거 */
+#blocks > .row:first-of-type {
+  padding-top: 0 !important;
+}
+
+/* 2. 혹시 모를 내부 요소들의 잔여 마진/패딩 완벽 초기화 */
+.app > main > section.view {
+  padding-top: 0 !important;
+}
+main.panel > .tabs {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+#blocks > .row {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* 두번째 툴바와 입력창 사이의 간격도 0으로 재확인 */
+#blockSplitContainer,
+#blockListWrapper,
+#blockFormWrapper,
+#blockForm {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+
+/* === 상하 여백 완벽 균형 맞춤 (약간 벌려서 동일하게) === */
+
+/* 1. 최상단 탭과 두번째 툴바 사이 간격: 4px */
+main.panel > .tabs {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+.app > main > section.view {
+  padding-top: 0 !important;
+}
+#blocks > .row:first-of-type {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 2. 두번째 툴바와 본문 입력창(세번째) 사이 간격: 4px */
+#blocks > .row {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+#blockSplitContainer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+
+/* === 최상단 탭 수직 중앙 정렬 및 폰트 크기/높이 동일화 === */
+
+/* 2단(가운데)과 3단(오른쪽)의 최상단 탭 래퍼 패딩을 완벽 대칭으로 설정 */
+main.panel > .tabs,
+aside.panel > .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important; /* 상하 패딩을 동일하게 하여 버튼을 수직 중앙에 배치 */
+  align-items: center !important;
+  margin-bottom: 4px !important; /* 탭바 아래 여백은 별도 유지 */
+}
+
+/* 2단과 3단의 탭 버튼 자체의 폰트 크기와 높이를 100% 동일하게 강제 */
+main.panel > .tabs button.tab,
+.app > aside:nth-child(5) > .tabs button.tab {
+  font-size: 11px !important;
+  padding: 4px 6px !important;
+  min-height: 24px !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important; /* 텍스트 수직 중앙 정렬 */
+}
+
+/* 1단(왼쪽) 탭도 높이/정렬 보정 (안그러면 혼자 깨짐) */
+.app > aside:nth-child(1) .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+.app > aside:nth-child(1) .tab {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+
+/* === 3단 탭바 수직 중앙 정렬 강제 (specificity override) === */
+.app > aside:nth-child(5) > .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  margin-bottom: 4px !important;
+  align-items: center !important;
+}
+
+/* 혹시 모를 1단 탭바 오버라이드도 확실하게 */
+.app > aside:nth-child(1) > .tabs {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  align-items: center !important;
+}
+
+
+/* === 2단과 3단의 하얀 박스(뷰 컨텐츠) 높이 및 위치 완벽 동일화 === */
+
+/* 2단(main)과 3단(오른쪽 aside)의 .view 영역 패딩을 100% 똑같이 맞춤 */
+main.panel > section.view,
+.app > aside:nth-child(5) > section.view {
+  padding: 4px !important;
+  box-sizing: border-box !important;
+  height: 100% !important; /* 부모 높이 꽉 채움 */
+  flex: 1 1 auto !important;
+}
+
+/* 2단 씬메타 카드와 3단 미리보기 카드가 뷰 안에서 꽉 차게 */
+main.panel > section.view > .card,
+.app > aside:nth-child(5) > section.view > .card {
+  height: 100% !important;
+  margin: 0 !important; /* 상하좌우 마진 0으로 동일하게 */
+  box-sizing: border-box !important;
+}
+
+/* 3단 카드 내부 여백이 너무 타이트하면 2단과 다르게 보일 수 있으니 살짝 보정 */
+#r-preview .card {
+  width: 100% !important;
+}
+
+
+/* === 1단 (좌측 레일) 모바일 최적화 및 어수선함 정리 === */
+
+/* 좌측 패널 가로폭 더 축소 (130px -> 110px) */
+.app {
+  grid-template-columns: 110px 6px 1fr 6px 170px !important;
+}
+
+/* 최상단 타이틀 영역 숨김 (모바일에서 공간만 차지함) */
+.app > aside:nth-child(1) > .stack:first-child {
+  display: none !important;
+}
+
+/* 패널 전체 상하 패딩 축소 */
+.app > aside:nth-child(1) {
+  padding: 4px !important;
+  gap: 4px !important;
+}
+
+/* 씬 목록 헤더 영역 압축 및 아이콘화 */
+.app > aside:nth-child(1) > .card.stack:nth-child(3) > .row {
+  margin-bottom: 2px !important;
+}
+.app > aside:nth-child(1) > .card.stack:nth-child(3) > .row > span {
+  font-size: 10px !important;
+}
+#delSceneBtn, #addSceneBtn {
+  font-size: 0 !important;
+  padding: 2px 4px !important;
+  min-height: 20px !important;
+  border-radius: 4px !important;
+  display: flex; justify-content: center; align-items: center;
+}
+#delSceneBtn::after { content: "🗑️"; font-size: 11px; }
+#addSceneBtn::after { content: "➕"; font-size: 11px; }
+
+/* 씬 리스트 아이템 높이 및 여백 축소 */
+#sceneList {
+  padding: 0 !important;
+}
+/* 하단 저장 버튼들 압축 */
+.app > aside:nth-child(1) > .stack:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.app > aside:nth-child(1) > .stack:last-child > button {
+  font-size: 10px !important;
+  padding: 4px !important;
+  min-height: 22px !important;
+}
+
+/* 1단 내부 카드들의 무거운 박스 섀도우/보더/패딩 제거 */
+.app > aside:nth-child(1) > .card {
+  padding: 4px !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
   background: transparent !important;
 }
 
-.tab {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  align-self: center !important;
-  height: 28px !important;
-  margin: 0 !important;
-  line-height: 1 !important;
-  position: relative !important;
-  top: 0 !important;
-  transform: none !important;
+
+/* === CRITICAL GRID FIX === */
+/* resizer가 display:none 이므로 자식은 3개뿐. 따라서 그리드 컬럼도 3개여야 함 */
+.app {
+  grid-template-columns: 110px 1fr 180px !important;
 }
 
-.tab:hover,
-.tab.active:hover,
-.btn:hover,
-.btn:active,
-.tab:active {
+
+/* === 1단/3단 폭 재조정 (가로 스크롤 방지 및 안정성 확보) === */
+.app {
+  grid-template-columns: 140px 1fr 230px !important;
+}
+
+/* 1단/3단 내부 카드나 리스트들이 새 폭에 맞게 유연하게 자리잡도록 보장 */
+.app > aside:nth-child(1),
+.app > aside:nth-child(5) {
+  overflow-x: hidden !important; /* 바깥 패널 가로 스크롤 완전 차단 */
+}
+
+/* 프로젝트 타이틀 등 텍스트가 140px 안에 예쁘게 들어가게 정렬 */
+#projTitle {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+
+/* === 1px 점프 버그 수정 및 3단 폭 10px 증가 === */
+
+/* 1. 버튼 터치/호버 시 위로 1px 튀어오르는 현상 완전 제거 */
+.btn:hover, .btn:active, .tab:hover, .tab:active {
   transform: none !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
-  filter: none !important;
 }
 
-.btn:hover {
-  background: var(--sf3) !important;
-  border-color: var(--ui-border-strong) !important;
-  color: var(--tx) !important;
-}
-
-.btn-primary:hover {
-  background: var(--prh) !important;
-  border-color: var(--prh) !important;
-  color: #fff !important;
-}
-
-.btn-danger:hover {
-  background: var(--sf) !important;
-  border-color: rgba(198,40,40,0.28) !important;
-  color: #c62828 !important;
+/* 2. 3단 폭 +10px (230px -> 240px) */
+.app {
+  grid-template-columns: 140px 1fr 240px !important;
 }
 
 
-input, textarea, select {
-  border-radius: var(--ui-radius) !important; 
-  border: var(--ui-border-strong) !important;
-  background: var(--sf2) !important;
-  color: var(--tx) !important;
-  font-size: 13px !important; 
-  padding: 6px 8px !important;
+/* === 좌측 패널 정리: 버튼 한 줄 / 목록 압축 === */
+
+/* 기존에 남아 있던 프로젝트 제목 / 새 작업 전용 스타일은 더 이상 쓰지 않음 */
+
+/* 씬 버튼 3개를 한 줄에 깔끔하게 배치 */
+.app > aside:nth-child(1) .card.stack:nth-child(3) > .row {
+  margin-bottom: 4px !important;
 }
 
-#flowBox, #projFlowBox {
-  background: var(--sf2) !important; 
-  color: var(--tx) !important; 
+.app > aside:nth-child(1) .card.stack:nth-child(3) > .row > .row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 3px !important;
+  width: 100% !important;
+  align-items: center !important;
+}
+
+#addSceneBtn, #loadJsonBtn, #delSceneBtn {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 4px 2px !important;
+  font-size: 10px !important;
+  min-height: 24px !important;
+  line-height: 1.1 !important;
+  border-radius: 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* 씬 목록 텍스트는 한 줄만 보여주고 깔끔하게 잘라냄 */
+#sceneList {
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+#sceneList .item {
+  padding: 5px 6px !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+}
+
+#sceneList .item .scene-name {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 하단 버튼이나 다른 요소가 씬 목록을 밀어내지 않도록 최소 여백만 유지 */
+.app > aside:nth-child(1) > .stack:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.app > aside:nth-child(1) > .stack:last-child > button {
+  font-size: 10px !important;
+  padding: 4px !important;
+  min-height: 22px !important;
+}
+
+/* 1단 내부 카드들의 무거운 박스 섀도우/보더/패딩 제거 */
+.app > aside:nth-child(1) > .card {
+  padding: 4px !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* 남아 있는 불필요한 프로젝트 타이틀/새 작업 스타일이 있더라도 씬 버튼 스타일에 덮어씀 */
+#projTitle, #newProjBtn {
+  display: none !important;
+}
+#loadJsonBtn {
+  position: static !important;
+  color: inherit !important;
+}
+#loadJsonBtn::after {
+  content: none !important;
+}
+
+/* 씬 추가/불러오기/삭제 버튼이 지나치게 튀지 않도록 정리 */
+.btn:hover, .btn:active, .tab:hover, .tab:active {
+  transform: none !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 1단/3단 폭 재조정 (가로 스크롤 방지 및 안정성 확보) */
+.app {
+  grid-template-columns: 140px 1fr 240px !important;
+}
+
+.app > aside:nth-child(1),
+.app > aside:nth-child(5) {
+  overflow-x: hidden !important;
+}
+
+/* === 2단 인라인 & 브랜치 탭 내부 간격 축소 === */
+
+/* 인라인/브랜치 탭 내부의 스플릿 컨테이너 (목록과 폼 사이의 틈) */
+#inline .split,
+#branch .split {
+  gap: 6px !important; /* 기존 16px(1rem) 틈새를 6px로 축소 */
+}
+
+/* 양쪽 하얀 박스(.card)의 불필요한 기본 마진 제거 */
+#inline .split .card,
+#branch .split .card {
+  margin: 0 !important;
+}
+
+/* 폼 영역이 너무 크면 부담스러울 수 있으니 패딩도 살짝 다이어트 */
+#inlineForm,
+#branchForm {
+  padding: 12px 16px !important; 
 }
 
 
-#blockListWrapper { flex: 0 0 240px !important; width: 240px !important; }
-#blockFormWrapper { flex: 1 1 auto !important; min-width: 0 !important; }
+/* === 1단 씬 목록 삭제/추가 아이콘 중앙 정렬 (Flex item 충돌 해결) === */
 
-
-/* ===== 스크롤 및 미니멀 디자인 (조그만 X 버튼) 패치 ===== */
-
-#inlineForm, #branchForm {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    padding-bottom: 40px !important;
+#delSceneBtn, #addSceneBtn {
+  position: relative !important;
+  color: transparent !important; /* 원본 텍스트 숨김 */
+  display: block !important;     /* Flex 해제 */
 }
 
-#inlineForm > div, 
-#branchForm > div,
-#blockForm > div {
-    flex-shrink: 0 !important;
-    min-height: min-content !important;
-    height: auto !important;
-    overflow: visible !important;
+#delSceneBtn::after, #addSceneBtn::after {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  color: #ffffff !important; /* 아이콘 색상은 하얗게 (원본 글씨 색상 따라감) */
 }
 
-.stack.full.card {
-    height: auto !important;
-    min-height: min-content !important;
-    flex-shrink: 0 !important;
-    display: flex !important; 
-    flex-direction: column !important;
-    margin-bottom: 10px !important; 
-    overflow: visible !important;
-}
-
-/* 💡 스탯 박스: 우측 상단에 미니 버튼이 들어갈 약간의 패딩만 줌 */
-.grid.card {
-    position: relative !important;
-    height: auto !important;
-    min-height: min-content !important;
-    flex-shrink: 0 !important;
-    display: grid !important; 
-    grid-template-columns: 1fr 1fr !important; 
-    gap: 8px !important;
-    margin-bottom: 8px !important; 
-    overflow: visible !important;
-    align-items: start !important;
-    padding: 10px 28px 10px 10px !important; /* 우측에 28px 여백 (X버튼 자리) */
-}
-
-.grid.card .full {
-    grid-column: 1 / -1 !important;
-}
-
-/* 💡 삭제 버튼: 텍스트 라벨(minValue 등)과 같은 높이에 아주 조그맣고 투명하게 배치 */
-.grid.card .btn-danger {
-    position: absolute !important;
-    top: 6px !important; /* 상단 라벨 텍스트와 높이 일치 */
-    right: 6px !important; /* 우측 상단 구석 */
-    width: 18px !important; 
-    height: 18px !important;
-    min-height: 18px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 0 !important; 
-
-    background: transparent !important; /* 투명 배경 (버튼 티 안나게) */
-    border: none !important; /* 테두리 없음 */
-    box-shadow: none !important; /* 그림자 없음 */
-    cursor: pointer !important;
-    grid-column: auto !important; 
-    opacity: 0.5 !important; /* 평소엔 반투명하게 숨어있음 */
-    transition: opacity 0.2s !important;
-}
-
-/* 마우스 올리면 진해짐 */
-.grid.card .btn-danger:hover {
-    background: transparent !important; 
-    opacity: 1 !important;
-}
-
-/* 조그맣고 깔끔한 X 기호 */
-.grid.card .btn-danger::after {
-    content: '✕' !important; 
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    color: #c62828 !important;
-    line-height: 1 !important;
+/* 추가 버튼은 기본 버튼이므로 아이콘 색상을 검정으로 */
+#addSceneBtn::after {
+  color: #111111 !important;
 }
 
 
-/* 블록 전용 뱃지 스타일 (첨부 이미지 색감 기반) */
-.block-badge { 
-    display: inline-block; 
-    padding: 3px 8px; 
-    border-radius: 6px; 
-    font-size: 11px; 
-    font-weight: 600; 
-    color: #ffffff; 
-    text-shadow: 0px 1px 2px rgba(0,0,0,0.4); 
+/* === 1단 씬 삭제/추가 버튼 크기 복구 === */
+
+/* 내용물이 투명해지면서 버튼 너비가 무너지는 현상을 막기 위해 최소 너비 지정 */
+#delSceneBtn, #addSceneBtn {
+  min-width: 32px !important; /* 버튼이 너무 좁아지지 않게 고정 폭 부여 */
+  height: 24px !important;    /* 높이도 명시적으로 고정 */
 }
-.badge-text { background-color: #1a3c5b; border: 1px solid #0f253a; } /* 어두운 네이비 (명도 낮음, 채도 중간) */
-.badge-inline { background-color: #d96c2c; border: 1px solid #b3531c; color: #fff; } /* 밝은 테라코타 오렌지 (명도 높음, 채도 높음) */
-.badge-branch { background-color: #9e2a2b; border: 1px solid #731b1c; } /* 짙은 크림슨 레드 (명도 중간, 채도 높음) */
-.badge-jump { background-color: #c99b24; border: 1px solid #9e7816; color: #1a1a1a; text-shadow: none; } /* 머스타드 골드 (명도 매우 높음, 검은 글씨) */
-.badge-label { background-color: #7d4e85; border: 1px solid #5a3561; } /* 톤다운된 플럼 퍼플 (명도 중간) */
-.badge-tooltip { background-color: #277a68; border: 1px solid #185245; } /* 딥 청록/틸 (명도/채도 중간) */
-.badge-footnote { background-color: #5c6c75; border: 1px solid #3c484f; } /* 스틸 그레이 (명도 중간, 채도 낮음) */
-.badge-illust { background-color: #3b3b3b; border: 1px solid #222222; } /* 다크 차콜 */
-.badge-default { background-color: #636e72; border: 1px solid #2d3436; }
 
-
-    /* Quick Insert UI Styles */
-    .quick-insert-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        padding: 6px 8px;
-        background: var(--sf3);
-        border-radius: 6px;
-        margin-bottom: 6px;
-        border: 1px solid var(--bd);
-    }
-    .quick-insert-bar .btn {
-        padding: 2px 8px !important;
-        font-size: 11px !important;
-        min-height: 20px !important;
-        background: var(--bg) !important;
-        color: var(--tx) !important;
-    }
-    .ac-popup {
-        position: absolute;
-        display: none;
-        background: var(--bg);
-        border: 1px solid var(--pr);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        border-radius: 6px;
-        z-index: 1000;
-        max-height: 180px;
-        overflow-y: auto;
-        min-width: 150px;
-    }
-    .ac-popup-item {
-        padding: 6px 10px;
-        cursor: pointer;
-        border-bottom: 1px solid var(--bd);
-        font-size: 12px;
-        color: var(--tx);
-    }
-    .ac-popup-item:last-child { border-bottom: none; }
-    .ac-popup-item:hover { background: var(--prbg); color: var(--prh); }
-
-    </style>
+</style>
 </head>
 <body>
 <!-- iPad rebuild note: 3-column layout rebuilt from v1.0 with fixed widths 240 / flexible center / 320, resizers disabled, Safari-compatible JS fallbacks applied. -->
@@ -886,8 +1222,6 @@ input, textarea, select {
     <div class="tabs">
       <button class="tab active" data-rview="r-preview">미리보기</button>
       <button class="tab" data-rview="r-sim">시뮬레이터 (Play)</button>
-      <button class="tab" data-rview="r-flow">플로우 차트</button>
-      <button class="tab" data-rview="r-proj-flow">프로젝트 전체구조</button>
       <button class="tab" data-rview="r-out">출력</button>
     </div>
 
@@ -913,32 +1247,6 @@ input, textarea, select {
       </div>
     </section>
 
-    <!-- Flowchart Tab -->
-    <section class="view" id="r-flow">
-      <div class="card stack">
-         <div class="row" style="justify-content:space-between; align-items:center">
-           <span>점프 & 라벨 구조</span>
-           <button class="btn btn-primary" id="btnRefreshFlow">↻ 갱신</button>
-         </div>
-         <div id="flowBox" style="background:var(--sf2); color:var(--tx); padding:1rem; border-radius:var(--r1);">
-           <div class="muted">갱신 버튼을 누르세요.</div>
-         </div>
-      </div>
-    </section>
-
-        <!-- Project Flow Tab -->
-    <section class="view" id="r-proj-flow">
-      <div class="card stack">
-         <div class="row" style="justify-content:space-between; align-items:center">
-           <span>전체 씬 연결 (브랜치/자동진행)</span>
-           <button class="btn btn-primary" id="btnRefreshProjFlow">↻ 전체 갱신</button>
-         </div>
-         <div id="projFlowBox" style="background:var(--sf2); color:var(--tx); padding:1rem; border-radius:var(--r1);">
-           <div class="muted">갱신 버튼을 누르세요.</div>
-         </div>
-      </div>
-    </section>
-
     <!-- Outputs Tab -->
     <section class="view stack" id="r-out" style="overflow-y:auto;">
       <div class="card stack"><div>TXT 출력</div><div class="code" id="txtBox"></div></div>
@@ -948,9 +1256,6 @@ input, textarea, select {
 </div>
 
 <script>
-// Initialize Mermaid
-mermaid.initialize({ startOnLoad: false, theme: 'base' });
-
 const uid = () => Math.random().toString(36).slice(2,10);
 const newReq = () => ({ requiredEndings: [], requiredVisitedChapters: [], requiredVisitedScenes: [], requiredStats: [] });
 const newOutcome = () => ({ outcomeType: 'stat', key: '', intValue: 0, boolValue: false });
@@ -1775,197 +2080,7 @@ document.getElementById('btnRunSim').onclick = async () => {
 };
 
 // ---------------- Flowchart (Mermaid) ----------------
-document.getElementById('btnRefreshFlow').onclick = () => {
-  const box = document.getElementById('flowBox');
-  box.innerHTML = '';
-
-  // Reset box styles for DOM layout
-  box.style.overflowY = 'auto';
-  box.style.padding = '20px';
-  box.style.background = 'var(--bg)';
-  box.style.cursor = 'default';
-  box.style.transform = 'none';
-
-  const scene = getScene();
-  const blocks = scene.blocks || [];
-  const inlineChoices = scene.sceneData.inlineChoices || [];
-  const branches = scene.sceneData.branches || [];
-
-  let html = '<div style="display:flex; flex-direction:column; gap:8px; align-items:center; font-family:var(--f1); padding-bottom: 40px;">';
-
-  const arrow = () => '<div style="color:var(--mt); font-size:18px; font-weight:bold; line-height:1;">↓</div>';
-
-  let textBuf = [];
-  const flushText = () => {
-    if(textBuf.length > 0) {
-      html += arrow();
-      let txt = textBuf.join('<br><br>').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      html += `<div style="background:var(--sf2); border:1px solid var(--bd); padding:12px 16px; border-radius:8px; max-width:90%; text-align:left; box-shadow:var(--sh); color:var(--tx); line-height:1.5; font-size:13px;">${txt}</div>`;
-      textBuf = [];
-    }
-  };
-
-  html += `<div style="background:var(--pr); color:#fff; padding:6px 20px; border-radius:20px; font-weight:bold; font-size:14px; box-shadow:var(--sh);">시작</div>`;
-
-  for(let i=0; i<blocks.length; i++) {
-    const b = blocks[i];
-
-    if(b.type === 'text') {
-       if(b.text && b.text.trim()) textBuf.push(b.text.trim());
-    } 
-    else if (b.type === 'label') {
-       flushText();
-       html += arrow();
-       html += `<div style="background:var(--sf3); border:2px dashed var(--mt); padding:8px 20px; border-radius:8px; font-weight:bold; color:var(--tx); font-size:14px;"># ${b.label}</div>`;
-    } 
-    else if (b.type === 'jump') {
-       flushText();
-       html += arrow();
-       html += `<div style="background:var(--wn); color:#fff; padding:8px 20px; border-radius:8px; font-weight:bold; font-size:13px;">점프 ➔ #${b.label}</div>`;
-    } 
-    else if (b.type === 'inline' || b.type === 'branch') {
-       flushText();
-       html += arrow();
-
-       let choiceHtml = `<div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%; max-width:90%;">`;
-
-       while(i < blocks.length && (blocks[i].type==='inline' || blocks[i].type==='branch')) {
-          const ch = blocks[i];
-          let target = '계속 진행 (다음 블록)';
-          let bgColor = 'var(--sf2)';
-          let bdColor = 'var(--bd)';
-          let icon = '💬';
-
-          if(ch.type === 'inline') {
-             const data = inlineChoices.find(x => x.inlineId === ch.inlineId);
-             if(data && data.jumpLabel) { 
-                 target = `점프 ➔ #${data.jumpLabel}`; 
-                 bgColor = 'var(--prbg)'; 
-                 bdColor = 'var(--pr)'; 
-                 icon = '↪️';
-             }
-          } else {
-             icon = '🚪';
-             const data = branches.find(x => x.branchId === ch.branchId);
-             if(data && data.nextSceneId) { 
-                 target = `씬 이동 ➔ Scene ${data.nextSceneId}`; 
-                 bgColor = '#ffebee'; 
-                 bdColor = '#c62828'; 
-             }
-             else if (data && data.nextChapterId) { 
-                 target = `챕터 이동 ➔ Chapter ${data.nextChapterId}`; 
-                 bgColor = '#ffebee'; 
-                 bdColor = '#c62828'; 
-             }
-          }
-
-          let label = (ch.text || ch.inlineId || ch.branchId || '선택').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-          choiceHtml += `
-          <div style="background:${bgColor}; border:2px solid ${bdColor}; padding:12px; border-radius:8px; flex:1; min-width:200px; max-width:320px; text-align:center; box-shadow:var(--sh); display:flex; flex-direction:column; gap:6px;">
-             <div style="font-weight:bold; font-size:13px; color:var(--tx);">${icon} ${label}</div>
-             <div style="font-size:11px; font-weight:600; color:var(--mt); background:rgba(255,255,255,0.5); padding:4px; border-radius:4px;">${target}</div>
-          </div>`;
-
-          i++;
-       }
-       i--; // adjust loop index
-       choiceHtml += `</div>`;
-       html += choiceHtml;
-    }
-  }
-
-  flushText();
-  html += arrow();
-  html += `<div style="background:#555; color:#fff; padding:6px 20px; border-radius:20px; font-weight:bold; font-size:14px; box-shadow:var(--sh);">씬 종료</div>`;
-
-  html += '</div>';
-  box.innerHTML = html;
-};
-
-
 // ---------------- Project Flowchart (Mermaid) ----------------
-document.getElementById('btnRefreshProjFlow').onclick = async () => {
-  const box = document.getElementById('projFlowBox');
-  box.innerHTML = '<div class="muted">전체 맵 생성 중...</div>';
-
-  const safeId = (s) => 's_' + (s||'').replace(/[^a-zA-Z0-9_가-힣]/g, '_');
-  let def = 'graph TD;\n';
-
-  // Register all scenes
-  project.scenes.forEach(s => {
-    const sId = safeId(s.sceneData.sceneId);
-    let title = s.name.replace(/["\\(\\)\\[\\]\;]/g, '');
-    def += `${sId}(["[${s.sceneData.sceneId}] ${title}"])\n`;
-
-    // Auto advance connection
-    if (s.sceneData.autoAdvance && s.sceneData.nextSceneId) {
-       def += `${sId} -.자동.-> ${safeId(s.sceneData.nextSceneId)}\n`;
-    }
-
-    // Branch connections
-    if (s.sceneData.branches && s.sceneData.branches.length > 0) {
-       s.sceneData.branches.forEach(b => {
-          if (b.nextSceneId) {
-             let bName = (b.branchText || b.branchId || '분기').replace(/["\\(\\)\\[\\]\;]/g, '');
-             def += `${sId} -- "${bName}" --> ${safeId(b.nextSceneId)}\n`;
-          }
-       });
-    }
-  });
-
-  try {
-     
-     const { svg } = await mermaid.render('projGraph_' + uid(), def);
-     box.innerHTML = svg;
-
-     /* 💡 플로우차트 줌/팬(Zoom/Pan) 기능 추가 */
-     const svgEl = box.querySelector('svg');
-     if (svgEl) {
-         svgEl.style.cursor = 'grab';
-         svgEl.style.width = '100%';
-         svgEl.style.height = '100%';
-         svgEl.style.maxHeight = 'none';
-         let scale = 1;
-         let isDragging = false;
-         let startX, startY, translateX = 0, translateY = 0;
-
-         const updateTransform = () => {
-             svgEl.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-             svgEl.style.transformOrigin = 'center center';
-         };
-
-         box.style.overflow = 'hidden';
-         box.addEventListener('wheel', (e) => {
-             e.preventDefault();
-             scale += e.deltaY * -0.001;
-             scale = Math.min(Math.max(0.125, scale), 4);
-             updateTransform();
-         });
-
-         box.addEventListener('mousedown', (e) => {
-             isDragging = true;
-             svgEl.style.cursor = 'grabbing';
-             startX = e.clientX - translateX;
-             startY = e.clientY - translateY;
-         });
-
-         box.addEventListener('mousemove', (e) => {
-             if (!isDragging) return;
-             translateX = e.clientX - startX;
-             translateY = e.clientY - startY;
-             updateTransform();
-         });
-
-         box.addEventListener('mouseup', () => { isDragging = false; svgEl.style.cursor = 'grab'; });
-         box.addEventListener('mouseleave', () => { isDragging = false; svgEl.style.cursor = 'grab'; });
-     }
-
-  } catch (err) {
-     box.innerHTML = `<div style="color:red">전체 맵 렌더링 오류. 씬 이름 등에 특수문자가 없는지 확인하세요.</div><pre class="tiny">${def}</pre>`;
-  }
-};
-
 // ---------------- Other Globals ----------------
 document.getElementById('addInlineBtn').onclick = () => { getScene().sceneData.inlineChoices.push({inlineId:'', jumpLabel:'', requirements:newReq(), outcomes:[]}); state.inlineIdx = getScene().sceneData.inlineChoices.length-1; updateDatalists(); renderInline(); renderOutputs(); };
 document.getElementById('delInlineBtn').onclick = () => { getScene().sceneData.inlineChoices.splice(state.inlineIdx, 1); state.inlineIdx = 0; updateDatalists(); renderInline(); renderOutputs(); };
